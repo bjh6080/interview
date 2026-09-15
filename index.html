@@ -88,8 +88,9 @@ textarea{min-height:110px;line-height:1.7;resize:vertical}
 :root[data-theme="dark"] .chip[aria-pressed=true]{background:var(--navy-500);border-color:var(--navy-500);color:#08131C}
 
 .empty{border:1px dashed var(--rule-strong);border-radius:10px;padding:28px 18px;text-align:center;color:var(--muted);font-size:14px}
-.stage{position:relative;background:#0A141D;border-radius:10px;overflow:hidden;aspect-ratio:3/4;max-height:58vh;margin:0 auto}
-.stage video{width:100%;height:100%;object-fit:cover;display:block}
+.stage{position:relative;background:#0A141D;border-radius:10px;overflow:hidden;aspect-ratio:3/4;max-height:46vh;margin:0 auto;transition:aspect-ratio .2s}
+#step-record .btnrow{position:sticky;bottom:0;z-index:6;background:var(--paper);margin:12px -18px 0;padding:11px 18px;border-top:1px solid var(--rule)}
+.stage video{width:100%;height:100%;object-fit:contain;display:block}
 .stage.mirror video{transform:scaleX(-1)}
 .stage.done video{transform:none}
 .stage .veil{position:absolute;inset:0;display:grid;place-content:center;color:#fff;font-size:14px;text-align:center;padding:20px;background:rgba(10,20,29,.82)}
@@ -280,12 +281,17 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
         <div class="reclamp" id="reclamp" hidden><i class="dot"></i><span id="clock">0:00</span></div>
         <button type="button" class="camswap" id="camswap" hidden onclick="App.switchCam()">카메라 전환</button>
       </div>
+      <p class="hint" id="cam-note"></p>
       <div class="meters">
         <div class="meter"><b id="m-time">0:00</b><span>녹화 시간</span></div>
         <div class="meter"><b id="m-rate">—</b><span id="m-mid">말 속도(자/분)</span></div>
         <div class="meter"><b id="m-still">—</b><span>자세 안정</span></div>
       </div>
-      <div style="margin-top:14px">
+      <div class="btnrow">
+        <button class="btn" id="btn-rec" type="button" onclick="App.toggleRec()">녹화 시작</button>
+        <button class="btn ghost" type="button" onclick="App.cancelRecord()">취소</button>
+      </div>
+      <div style="margin-top:16px">
         <span style="display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--navy-700)">녹화 방식</span>
         <div class="chips" id="mode-chips">
           <button class="chip" type="button" id="mode-stt" onclick="App.setMode('stt')">받아쓰기 우선 · 선생님과</button>
@@ -299,10 +305,6 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
       </div>
       <div class="live" id="live"><span class="interim">받아쓰기를 기다리는 중…</span></div>
       <p class="hint" id="sr-note"></p>
-      <div class="btnrow">
-        <button class="btn" id="btn-rec" type="button" onclick="App.toggleRec()">녹화 시작</button>
-        <button class="btn ghost" type="button" onclick="App.cancelRecord()">취소</button>
-      </div>
     </div>
 
     <div id="step-result" hidden></div>
@@ -804,8 +806,14 @@ function setPractice(m){
     $("prac-note").textContent="집에서 혼자 하는 연습입니다. 목소리와 표정 위주로 피드백을 드리고, 기록은 본인만 볼 수 있습니다. 일지는 만들지 않습니다.";
   }
 }
+function needAudio(){ return !(REC_MODE==="stt" && isMobileDev()); }
+async function restartCamera(){
+  if(M.stream){ M.stream.getTracks().forEach(function(t){t.stop()}); M.stream=null; }
+  $("veil").hidden=false; $("veil").textContent="카메라를 다시 켜는 중입니다";
+  await startCamera();
+}
 function isMobileDev(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||""); }
-function setMode(m){
+function setMode(m,quiet){
   if(M.recording) return toast("녹화 중에는 바꿀 수 없습니다");
   if(m==="stt"&&!hasSR()) return toast("이 브라우저는 자동 받아쓰기를 지원하지 않습니다");
   REC_MODE=m;
@@ -821,6 +829,10 @@ function setMode(m){
     note.textContent="목소리가 그대로 녹음됩니다. 자동 받아쓰기는 꺼지고, 성량과 말의 흐름을 재 드립니다.";
     live.hidden=true; $("m-mid").textContent="목소리 크기";
   }
+  if(!quiet&&M.stream){
+    const has=M.stream.getAudioTracks().length>0;
+    if(has!==needAudio()) restartCamera();
+  }
 }
 function initMode(){
   if(PRACTICE==="solo") REC_MODE="audio";
@@ -829,7 +841,7 @@ function initMode(){
     $("mode-stt").disabled=true;
     $("mode-stt").style.opacity=".45";
   }
-  setMode(REC_MODE);
+  setMode(REC_MODE,true);
 }
 const M={stream:null,rec:null,chunks:[],mime:"",sr:null,srOn:false,t0:0,timer:null,
          lines:[],interim:"",motion:[],prev:null,mTimer:null,recording:false,url:null};
@@ -859,7 +871,7 @@ async function switchCam(){
   $("veil").hidden=false; $("veil").textContent="카메라를 바꾸는 중입니다";
   const ok=await startCamera();
   $("camswap").disabled=false;
-  if(ok){ toast(FACING==="user"?"앞 카메라(셀카)":"뒤 카메라"); return; }
+  if(ok){ fitStage(); toast(FACING==="user"?"앞 카메라(셀카)":"뒤 카메라"); return; }
   FACING=prev;
   $("veil").textContent="원래 카메라로 되돌리는 중입니다";
   await startCamera();
@@ -875,12 +887,13 @@ async function showSwapIfMulti(){
 async function startCamera(){
   try{
     M.stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:FACING},width:{ideal:640},height:{ideal:854}},
-      audio:{echoCancellation:true,noiseSuppression:true}});
+      video:{facingMode:{ideal:FACING},width:{ideal:720},height:{ideal:1280},aspectRatio:{ideal:0.5625}},
+      audio:needAudio()?{echoCancellation:true,noiseSuppression:true}:false});
     const v=$("preview"); v.srcObject=M.stream; v.muted=true; v.controls=false;
     try{await v.play()}catch(e){}
     await new Promise(function(r){setTimeout(r,400)});
     if(!v.videoWidth){ throw new Error("화면이 들어오지 않습니다"); }
+    fitStage();
     $("veil").hidden=true; $("stage").classList.remove("done");
     $("stage").classList.toggle("mirror",FACING==="user");
     $("camswap").disabled=false; showSwapIfMulti();
@@ -895,6 +908,16 @@ async function startCamera(){
     $("veil").innerHTML="카메라를 켤 수 없습니다.<br>권한을 허용하고, 카카오톡 안이 아니라 크롬·사파리로 열어 주세요."+
       '<br><br><button type="button" class="camswap" style="position:static" onclick="App.retryCam()">다시 켜기</button>';
     return false;
+  }
+}
+function fitStage(){
+  const v=$("preview"), st=$("stage"), note=$("cam-note");
+  if(!v||!v.videoWidth) return;
+  st.style.aspectRatio=v.videoWidth+" / "+v.videoHeight;
+  if(note){
+    note.textContent=(v.videoWidth>v.videoHeight)
+      ? "이 기기 카메라는 가로로 찍힙니다. 화면에 보이는 그대로 저장되니, 얼굴이 가운데에 크게 들어오도록 폰을 눈높이에 두세요."
+      : "화면에 보이는 그대로 저장됩니다. 얼굴부터 가슴까지 들어오게 두세요.";
   }
 }
 async function retryCam(){
@@ -912,12 +935,7 @@ function startRec(){
   if(!M.stream) return toast("카메라가 켜지지 않았습니다");
   M.chunks=[]; M.lines=[]; M.interim=""; M.motion=[]; M.prev=null;
   M.mime=pickMime();
-  /* 휴대폰은 마이크를 한 곳에서만 쓸 수 있습니다.
-     받아쓰기를 쓰는 동안에는 영상에서 소리 트랙을 떼어 마이크 다툼을 막습니다. */
-  let recStream=M.stream;
-  if(REC_MODE==="stt"&&isMobileDev()){
-    try{ recStream=new MediaStream(M.stream.getVideoTracks()); }catch(e){ recStream=M.stream; }
-  }
+  const recStream=M.stream;
   try{ M.rec=new MediaRecorder(recStream,M.mime?{mimeType:M.mime,videoBitsPerSecond:900000,audioBitsPerSecond:64000}:{}); }
   catch(e){ try{M.rec=new MediaRecorder(recStream)}catch(e2){ return toast("이 브라우저는 녹화를 지원하지 않습니다"); } }
   M.rec.ondataavailable=function(ev){ if(ev.data&&ev.data.size) M.chunks.push(ev.data); };
@@ -932,6 +950,12 @@ function startRec(){
   startMotion(); startFace();
   if(REC_MODE==="stt") startSR(); else startVoice();
   $("live").innerHTML='<span class="interim">듣고 있습니다…</span>';
+  if(REC_MODE==="stt"){
+    setTimeout(function(){
+      if(M.recording&&!M.lines.length&&!M.interim)
+        $("live").innerHTML='<span class="interim">아직 받아쓴 말이 없습니다. 마이크 권한을 허용했는지, 조금 더 또렷하게 말하고 있는지 확인해 주세요.</span>';
+    },12000);
+  }
 }
 function stopRec(){
   if(!M.recording) return;
@@ -1026,11 +1050,15 @@ function startFace(){
     const g=function(n){ for(var i=0;i<cats.length;i++) if(cats[i].categoryName===n) return cats[i].score; return 0; };
     const eL=lms[33],eR=lms[263],no=lms[1];
     const mx=(eL.x+eR.x)/2, my=(eL.y+eR.y)/2;
-    const d=Math.sqrt(Math.pow(eR.x-eL.x,2)+Math.pow(eR.y-eL.y,2))||0.0001;
+    if(!eL||!eR||!no){ FACE.data.push({f:0}); return; }
+    let d=Math.sqrt(Math.pow(eR.x-eL.x,2)+Math.pow(eR.y-eL.y,2));
+    if(!isFinite(d)||d<0.001){ FACE.data.push({f:0}); return; }
+    const yaw=(no.x-mx)/d, pitch=(no.y-my)/d;
+    if(!isFinite(yaw)||!isFinite(pitch)){ FACE.data.push({f:0}); return; }
     FACE.data.push({
       f:1,
-      yaw:(no.x-mx)/d,
-      pitch:(no.y-my)/d,
+      yaw:yaw,
+      pitch:pitch,
       smile:Math.max(g("mouthSmileLeft"),g("mouthSmileRight")),
       brow:Math.max(g("browDownLeft"),g("browDownRight")),
       blink:Math.max(g("eyeBlinkLeft"),g("eyeBlinkRight")),
@@ -1039,10 +1067,13 @@ function startFace(){
   },180);
 }
 function stopFace(){ if(FACE.timer){ clearInterval(FACE.timer); FACE.timer=null; } }
+function num(x,f){ return (typeof x==="number"&&isFinite(x))?x:f; }
 function sd(a){
+  a=a.filter(function(x){return typeof x==="number"&&isFinite(x)});
   if(a.length<2) return 0;
   const m=a.reduce(function(x,y){return x+y},0)/a.length;
-  return Math.sqrt(a.reduce(function(x,y){return x+Math.pow(y-m,2)},0)/a.length);
+  const v=Math.sqrt(a.reduce(function(x,y){return x+Math.pow(y-m,2)},0)/a.length);
+  return isFinite(v)?v:0;
 }
 function faceStats(durMs){
   const a=FACE.data;
@@ -1052,15 +1083,15 @@ function faceStats(durMs){
   if(seen.length<10) return {ok:false,faceRatio:faceRatio};
   const pit=seen.map(function(x){return x.pitch}).sort(function(p,q){return p-q});
   const pMid=pit[Math.floor(pit.length/2)];
-  const front=seen.filter(function(x){ return Math.abs(x.yaw)<0.12 && Math.abs(x.pitch-pMid)<0.28 && x.away<0.45; });
+  const front=seen.filter(function(x){ return Math.abs(x.yaw)<0.16 && Math.abs(x.pitch-pMid)<0.35 && x.away<0.62; });
   let blinks=0,was=false;
   seen.forEach(function(x){ const b=x.blink>0.5; if(b&&!was) blinks++; was=b; });
   return {
     ok:true,
     faceRatio:faceRatio,
     frontRatio:Math.round(front.length/seen.length*100),
-    sway:Math.round(sd(seen.map(function(x){return x.yaw}))*100),
-    nod:Math.round(sd(seen.map(function(x){return x.pitch}))*100),
+    sway:num(Math.round(sd(seen.map(function(x){return x.yaw}))*100),0),
+    nod:num(Math.round(sd(seen.map(function(x){return x.pitch}))*100),0),
     smileRatio:Math.round(seen.filter(function(x){return x.smile>0.15}).length/seen.length*100),
     browRatio:Math.round(seen.filter(function(x){return x.brow>0.28}).length/seen.length*100),
     blinkPerMin:durMs>3000?Math.round(blinks/(durMs/60000)):null
