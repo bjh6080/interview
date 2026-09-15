@@ -31,6 +31,7 @@
   --navy-700:#8FBCEC; --navy-900:#C6DDF5; --shadow:none;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;padding:0}
 body{background:var(--mist);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%}
 button,input,select,textarea{font-family:inherit;font-size:16px;color:inherit}
@@ -150,6 +151,10 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
   .report h1{font-size:19px;margin:0 0 2px}
   .report .summary{background:#EEF2F8;border-left:3px solid #2F6098}
 }
+#inapp{position:sticky;top:0;z-index:60;background:#B23A2F;color:#fff;padding:12px 14px;font-size:13.5px;line-height:1.6}
+#inapp b{font-weight:700}
+#inapp .r{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
+#inapp button{flex:1 1 auto;background:#fff;color:#B23A2F;border:0;border-radius:7px;padding:9px 12px;font-size:13.5px;font-weight:700;cursor:pointer}
 .foot{text-align:center;font-size:12px;color:var(--muted);padding:24px 16px 40px;line-height:1.8}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
@@ -157,6 +162,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </head>
 <body>
 
+<div id="inapp" hidden></div>
 <header class="topbar">
   <div class="brand">중화고 면접 연습기</div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
@@ -245,9 +251,17 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
       </div>
       <label class="f"><span>학과·모집단위</span><input type="text" id="s-major" placeholder="사회학과"></label>
       <label class="f"><span>전형명</span><input type="text" id="s-adm" placeholder="해당 대학의 정확한 전형 명칭"></label>
-      <div style="margin-bottom:9px"><span style="display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--navy-700)">지도교사</span></div>
-      <div class="chips" id="teacher-chips"></div>
-      <p class="hint">여러 명이면 모두 고르세요. 고른 선생님만 이 기록을 열어 볼 수 있습니다.</p>
+      <div style="margin-bottom:6px"><span style="display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--navy-700)">연습 방식</span></div>
+      <div class="chips" id="prac-chips">
+        <button class="chip" type="button" id="prac-with" onclick="App.setPractice('with')">지도교사와 함께</button>
+        <button class="chip" type="button" id="prac-solo" onclick="App.setPractice('solo')">혼자 연습</button>
+      </div>
+      <p class="hint" id="prac-note"></p>
+      <div id="teacher-wrap" style="margin-top:14px">
+        <div style="margin-bottom:6px"><span style="display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--navy-700)">지도교사</span></div>
+        <div class="chips" id="teacher-chips"></div>
+        <p class="hint">여러 명이면 모두 고르세요. 고른 선생님만 이 기록을 열어 볼 수 있습니다.</p>
+      </div>
       <div class="row" style="margin-top:14px">
         <label class="f"><span>지도 일시</span><input type="date" id="s-date"></label>
         <label class="f"><span>시작 시각</span><input type="time" id="s-time"></label>
@@ -268,8 +282,20 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
       </div>
       <div class="meters">
         <div class="meter"><b id="m-time">0:00</b><span>녹화 시간</span></div>
-        <div class="meter"><b id="m-rate">—</b><span>말 속도(자/분)</span></div>
+        <div class="meter"><b id="m-rate">—</b><span id="m-mid">말 속도(자/분)</span></div>
         <div class="meter"><b id="m-still">—</b><span>자세 안정</span></div>
+      </div>
+      <div style="margin-top:14px">
+        <span style="display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--navy-700)">녹화 방식</span>
+        <div class="chips" id="mode-chips">
+          <button class="chip" type="button" id="mode-stt" onclick="App.setMode('stt')">받아쓰기 우선 · 선생님과</button>
+          <button class="chip" type="button" id="mode-audio" onclick="App.setMode('audio')">소리 녹화 우선 · 혼자</button>
+        </div>
+        <p class="hint" id="mode-note"></p>
+        <div class="chips" style="margin-top:10px">
+          <button class="chip" type="button" id="face-btn" onclick="App.toggleFace()">표정 분석</button>
+        </div>
+        <p class="hint" id="face-note">표정 분석을 켜면 시선·미소·고개 방향까지 봅니다. 처음 한 번만 자료를 내려받느라 몇 초 걸립니다.</p>
       </div>
       <div class="live" id="live"><span class="interim">받아쓰기를 기다리는 중…</span></div>
       <p class="hint" id="sr-note"></p>
@@ -734,7 +760,7 @@ async function enterStudent(){
   $("view-auth").hidden=true; $("view-teacher").hidden=true; $("view-student").hidden=false;
   topbarWho(); stTab("practice");
   $("s-date").value=todayStr(); $("s-time").value=nowStr();
-  await loadDir(); drawChips();
+  await loadDir(); drawChips(); setPractice("with");
   window.scrollTo(0,0);
 }
 function stTab(w){
@@ -763,6 +789,48 @@ function pickedNames(){
 
 /* ======================= 녹화 ======================= */
 let FACING="user";
+let REC_MODE="stt";
+let PRACTICE="with";
+function setPractice(m){
+  PRACTICE=m;
+  $("prac-with").setAttribute("aria-pressed",m==="with");
+  $("prac-solo").setAttribute("aria-pressed",m==="solo");
+  $("teacher-wrap").hidden=(m!=="with");
+  if(m==="with"){
+    REC_MODE=hasSR()?"stt":"audio";
+    $("prac-note").textContent="선생님이 질문하고 학생이 답하는 모의면접입니다. 오간 말이 글로 기록되고, 선생님께 드릴 면접지도 일지가 만들어집니다.";
+  }else{
+    PICKED=[]; REC_MODE="audio";
+    $("prac-note").textContent="집에서 혼자 하는 연습입니다. 목소리와 표정 위주로 피드백을 드리고, 기록은 본인만 볼 수 있습니다. 일지는 만들지 않습니다.";
+  }
+}
+function isMobileDev(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||""); }
+function setMode(m){
+  if(M.recording) return toast("녹화 중에는 바꿀 수 없습니다");
+  if(m==="stt"&&!hasSR()) return toast("이 브라우저는 자동 받아쓰기를 지원하지 않습니다");
+  REC_MODE=m;
+  $("mode-stt").setAttribute("aria-pressed",m==="stt");
+  $("mode-audio").setAttribute("aria-pressed",m==="audio");
+  const note=$("mode-note"), live=$("live");
+  if(m==="stt"){
+    note.textContent=isMobileDev()
+      ? "오간 말이 글로 기록됩니다. 휴대폰은 마이크를 한 곳에서만 쓸 수 있어, 이 방식에서는 영상에 소리가 들어가지 않습니다."
+      : "오간 말이 글로 기록되고, 영상에 소리도 함께 들어갑니다.";
+    live.hidden=false; $("m-mid").textContent="말 속도(자/분)";
+  }else{
+    note.textContent="목소리가 그대로 녹음됩니다. 자동 받아쓰기는 꺼지고, 성량과 말의 흐름을 재 드립니다.";
+    live.hidden=true; $("m-mid").textContent="목소리 크기";
+  }
+}
+function initMode(){
+  if(PRACTICE==="solo") REC_MODE="audio";
+  if(!hasSR()){
+    REC_MODE="audio";
+    $("mode-stt").disabled=true;
+    $("mode-stt").style.opacity=".45";
+  }
+  setMode(REC_MODE);
+}
 const M={stream:null,rec:null,chunks:[],mime:"",sr:null,srOn:false,t0:0,timer:null,
          lines:[],interim:"",motion:[],prev:null,mTimer:null,recording:false,url:null};
 const QRE=/[?？]\s*$|(까요|나요|습니까|입니까|는지요|주세요|보세요|설명해|말해|말씀해|이유는|무엇인가|어떻게 생각)/;
@@ -773,8 +841,9 @@ function goRecord(){
   const admType=$("s-admtype").value;
   if(!univ||!major)  return e.textContent="대학과 학과를 입력해 주세요.";
   if(!admType)       return e.textContent="전형 유형을 골라 주세요.";
-  if(!PICKED.length) return e.textContent="지도교사를 한 명 이상 골라 주세요.";
-  SETUP={univ:univ,major:major,adm:adm,admType:admType,tids:PICKED.slice(),teachers:pickedNames(),
+  if(PRACTICE==="with"&&!PICKED.length) return e.textContent="지도교사를 한 명 이상 골라 주세요.";
+  SETUP={univ:univ,major:major,adm:adm,admType:admType,practice:PRACTICE,
+         tids:(PRACTICE==="with"?PICKED.slice():[]),teachers:(PRACTICE==="with"?pickedNames():[]),
          date:$("s-date").value||todayStr(),time:$("s-time").value||nowStr(),
          place:$("s-place").value.trim()||"본관 4층 컨설팅룸"};
   $("step-setup").hidden=true; $("step-record").hidden=false; $("step-result").hidden=true;
@@ -783,11 +852,18 @@ function goRecord(){
 }
 async function switchCam(){
   if(M.recording) return toast("녹화 중에는 카메라를 바꿀 수 없습니다");
+  const prev=FACING;
   FACING=(FACING==="user")?"environment":"user";
   if(M.stream){ M.stream.getTracks().forEach(function(t){t.stop()}); M.stream=null; }
+  $("camswap").disabled=true;
   $("veil").hidden=false; $("veil").textContent="카메라를 바꾸는 중입니다";
+  const ok=await startCamera();
+  $("camswap").disabled=false;
+  if(ok){ toast(FACING==="user"?"앞 카메라(셀카)":"뒤 카메라"); return; }
+  FACING=prev;
+  $("veil").textContent="원래 카메라로 되돌리는 중입니다";
   await startCamera();
-  toast(FACING==="user"?"앞 카메라(셀카)":"뒤 카메라");
+  toast("이 기기에서는 다른 카메라를 쓸 수 없습니다");
 }
 async function showSwapIfMulti(){
   try{
@@ -803,16 +879,27 @@ async function startCamera(){
       audio:{echoCancellation:true,noiseSuppression:true}});
     const v=$("preview"); v.srcObject=M.stream; v.muted=true; v.controls=false;
     try{await v.play()}catch(e){}
+    await new Promise(function(r){setTimeout(r,400)});
+    if(!v.videoWidth){ throw new Error("화면이 들어오지 않습니다"); }
     $("veil").hidden=true; $("stage").classList.remove("done");
     $("stage").classList.toggle("mirror",FACING==="user");
     $("camswap").disabled=false; showSwapIfMulti();
+    initMode(); faceBtn(); loadFace();
     $("sr-note").textContent=hasSR()
       ? "질문과 답변이 자동으로 받아쓰입니다. 틀린 부분은 녹화가 끝난 뒤 고칠 수 있습니다."
       : "이 브라우저는 자동 받아쓰기를 지원하지 않습니다. 녹화가 끝나면 내용을 직접 적어 주세요. 안드로이드는 크롬으로 열면 자동으로 받아씁니다.";
+    return true;
   }catch(err){
+    if(M.stream){ M.stream.getTracks().forEach(function(t){t.stop()}); M.stream=null; }
     $("veil").hidden=false;
-    $("veil").textContent="카메라·마이크를 켤 수 없습니다. 권한을 허용하고, 카카오톡 안이 아니라 크롬·사파리로 열어 주세요.";
+    $("veil").innerHTML="카메라를 켤 수 없습니다.<br>권한을 허용하고, 카카오톡 안이 아니라 크롬·사파리로 열어 주세요."+
+      '<br><br><button type="button" class="camswap" style="position:static" onclick="App.retryCam()">다시 켜기</button>';
+    return false;
   }
+}
+async function retryCam(){
+  $("veil").textContent="카메라를 켜는 중입니다";
+  await startCamera();
 }
 function hasSR(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
 function pickMime(){
@@ -825,8 +912,14 @@ function startRec(){
   if(!M.stream) return toast("카메라가 켜지지 않았습니다");
   M.chunks=[]; M.lines=[]; M.interim=""; M.motion=[]; M.prev=null;
   M.mime=pickMime();
-  try{ M.rec=new MediaRecorder(M.stream,M.mime?{mimeType:M.mime,videoBitsPerSecond:900000,audioBitsPerSecond:64000}:{}); }
-  catch(e){ try{M.rec=new MediaRecorder(M.stream)}catch(e2){ return toast("이 브라우저는 녹화를 지원하지 않습니다"); } }
+  /* 휴대폰은 마이크를 한 곳에서만 쓸 수 있습니다.
+     받아쓰기를 쓰는 동안에는 영상에서 소리 트랙을 떼어 마이크 다툼을 막습니다. */
+  let recStream=M.stream;
+  if(REC_MODE==="stt"&&isMobileDev()){
+    try{ recStream=new MediaStream(M.stream.getVideoTracks()); }catch(e){ recStream=M.stream; }
+  }
+  try{ M.rec=new MediaRecorder(recStream,M.mime?{mimeType:M.mime,videoBitsPerSecond:900000,audioBitsPerSecond:64000}:{}); }
+  catch(e){ try{M.rec=new MediaRecorder(recStream)}catch(e2){ return toast("이 브라우저는 녹화를 지원하지 않습니다"); } }
   M.rec.ondataavailable=function(ev){ if(ev.data&&ev.data.size) M.chunks.push(ev.data); };
   M.rec.onstop=onRecStop;
   try{ M.rec.start(1000); }catch(e){ return toast("녹화를 시작할 수 없습니다"); }
@@ -835,26 +928,36 @@ function startRec(){
   $("reclamp").hidden=false; $("stage").classList.add("rec");
   $("camswap").disabled=true;
   M.timer=setInterval(tick,250);
-  startMotion(); startSR();
+  $("mode-stt").disabled=true; $("mode-audio").disabled=true;
+  startMotion(); startFace();
+  if(REC_MODE==="stt") startSR(); else startVoice();
   $("live").innerHTML='<span class="interim">듣고 있습니다…</span>';
 }
 function stopRec(){
   if(!M.recording) return;
   M.recording=false;
   try{M.rec.stop()}catch(e){}
-  stopSR(); stopMotion();
+  stopSR(); stopMotion(); stopVoice(); stopFace();
   clearInterval(M.timer); M.timer=null;
   $("reclamp").hidden=true; $("stage").classList.remove("rec");
   $("camswap").disabled=false;
+  $("mode-audio").disabled=false; if(hasSR()) $("mode-stt").disabled=false;
   $("btn-rec").disabled=true; $("btn-rec").innerHTML='<i class="spin"></i> 정리하는 중…';
 }
 function tick(){
   const ms=Date.now()-M.t0;
   $("clock").textContent=mmss(ms); $("m-time").textContent=mmss(ms);
-  const chars=M.lines.map(function(l){return l.s}).join("").replace(/\s/g,"").length;
-  const min=ms/60000;
-  $("m-rate").textContent=(min>0.2&&chars)?Math.round(chars/min):"—";
-  const st=stability(); $("m-still").textContent=(st!=null)?st+"점":"—";
+  if(REC_MODE==="stt"){
+    const chars=M.lines.map(function(l){return l.s}).join("").replace(/\s/g,"").length;
+    const min=ms/60000;
+    $("m-rate").textContent=(min>0.2&&chars)?Math.round(chars/min):"—";
+  }else{
+    const vs=voiceStats();
+    $("m-rate").textContent=vs?vs.loud+"점":"—";
+  }
+  const fs=faceStats(ms);
+  if(fs&&fs.ok){ $("m-still").textContent=fs.frontRatio+"%"; $("m-still").nextElementSibling.textContent="정면 유지"; }
+  else { const st=stability(); $("m-still").textContent=(st!=null)?st+"점":"—"; }
 }
 function startMotion(){
   const cv=document.createElement("canvas"); cv.width=64; cv.height=48;
@@ -869,6 +972,136 @@ function startMotion(){
       M.prev=cur;
     }catch(e){}
   },380);
+}
+/* ===== 얼굴 분석 (MediaPipe Face Landmarker) ===== */
+var MP_VER="0.10.14";
+var MP_BASE="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@"+MP_VER;
+var MP_MODEL="https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+const FACE={want:true,ready:false,loading:false,lm:null,timer:null,data:[],err:""};
+
+function faceNote(t){ const n=$("face-note"); if(n) n.textContent=t; }
+function faceBtn(){
+  const b=$("face-btn"); if(!b) return;
+  b.setAttribute("aria-pressed",FACE.want&&FACE.ready);
+  b.textContent=FACE.want?(FACE.ready?"표정 분석 켜짐":"표정 분석 준비 중"):"표정 분석 꺼짐";
+}
+function toggleFace(){
+  if(M.recording) return toast("녹화 중에는 바꿀 수 없습니다");
+  FACE.want=!FACE.want;
+  faceBtn();
+  if(FACE.want){ loadFace(); }
+  else faceNote("표정 분석을 껐습니다. 화면 움직임만 잽니다.");
+}
+async function loadFace(){
+  if(!FACE.want||FACE.ready||FACE.loading) return FACE.ready;
+  FACE.loading=true; faceBtn();
+  faceNote("표정 분석 자료를 내려받는 중입니다… (처음 한 번만, 몇 초)");
+  try{
+    const V=await import(MP_BASE+"/vision_bundle.mjs");
+    const fs=await V.FilesetResolver.forVisionTasks(MP_BASE+"/wasm");
+    const opt={baseOptions:{modelAssetPath:MP_MODEL,delegate:"GPU"},
+               runningMode:"VIDEO",numFaces:1,outputFaceBlendshapes:true};
+    try{ FACE.lm=await V.FaceLandmarker.createFromOptions(fs,opt); }
+    catch(e){ opt.baseOptions.delegate="CPU"; FACE.lm=await V.FaceLandmarker.createFromOptions(fs,opt); }
+    FACE.ready=true;
+    faceNote("표정 분석이 켜졌습니다. 얼굴이 화면 안에 들어오게 두세요.");
+  }catch(e){
+    FACE.err=String((e&&e.message)||e);
+    faceNote("표정 분석을 쓸 수 없어 화면 움직임만 잽니다. ("+FACE.err.slice(0,60)+")");
+  }
+  FACE.loading=false; faceBtn();
+  return FACE.ready;
+}
+function startFace(){
+  if(!FACE.want||!FACE.ready||!FACE.lm) return;
+  FACE.data=[];
+  FACE.timer=setInterval(function(){
+    const v=$("preview");
+    if(!v||v.readyState<2||!v.videoWidth) return;
+    let res;
+    try{ res=FACE.lm.detectForVideo(v,performance.now()); }catch(e){ return; }
+    const lms=res&&res.faceLandmarks&&res.faceLandmarks[0];
+    if(!lms||!lms.length){ FACE.data.push({f:0}); return; }
+    const cats=(res.faceBlendshapes&&res.faceBlendshapes[0]&&res.faceBlendshapes[0].categories)||[];
+    const g=function(n){ for(var i=0;i<cats.length;i++) if(cats[i].categoryName===n) return cats[i].score; return 0; };
+    const eL=lms[33],eR=lms[263],no=lms[1];
+    const mx=(eL.x+eR.x)/2, my=(eL.y+eR.y)/2;
+    const d=Math.sqrt(Math.pow(eR.x-eL.x,2)+Math.pow(eR.y-eL.y,2))||0.0001;
+    FACE.data.push({
+      f:1,
+      yaw:(no.x-mx)/d,
+      pitch:(no.y-my)/d,
+      smile:Math.max(g("mouthSmileLeft"),g("mouthSmileRight")),
+      brow:Math.max(g("browDownLeft"),g("browDownRight")),
+      blink:Math.max(g("eyeBlinkLeft"),g("eyeBlinkRight")),
+      away:Math.max(g("eyeLookOutLeft"),g("eyeLookOutRight"),g("eyeLookUpLeft"),g("eyeLookUpRight"),g("eyeLookDownLeft"),g("eyeLookDownRight"))
+    });
+  },180);
+}
+function stopFace(){ if(FACE.timer){ clearInterval(FACE.timer); FACE.timer=null; } }
+function sd(a){
+  if(a.length<2) return 0;
+  const m=a.reduce(function(x,y){return x+y},0)/a.length;
+  return Math.sqrt(a.reduce(function(x,y){return x+Math.pow(y-m,2)},0)/a.length);
+}
+function faceStats(durMs){
+  const a=FACE.data;
+  if(!a||a.length<15) return null;
+  const seen=a.filter(function(x){return x.f});
+  const faceRatio=Math.round(seen.length/a.length*100);
+  if(seen.length<10) return {ok:false,faceRatio:faceRatio};
+  const pit=seen.map(function(x){return x.pitch}).sort(function(p,q){return p-q});
+  const pMid=pit[Math.floor(pit.length/2)];
+  const front=seen.filter(function(x){ return Math.abs(x.yaw)<0.12 && Math.abs(x.pitch-pMid)<0.28 && x.away<0.45; });
+  let blinks=0,was=false;
+  seen.forEach(function(x){ const b=x.blink>0.5; if(b&&!was) blinks++; was=b; });
+  return {
+    ok:true,
+    faceRatio:faceRatio,
+    frontRatio:Math.round(front.length/seen.length*100),
+    sway:Math.round(sd(seen.map(function(x){return x.yaw}))*100),
+    nod:Math.round(sd(seen.map(function(x){return x.pitch}))*100),
+    smileRatio:Math.round(seen.filter(function(x){return x.smile>0.15}).length/seen.length*100),
+    browRatio:Math.round(seen.filter(function(x){return x.brow>0.28}).length/seen.length*100),
+    blinkPerMin:durMs>3000?Math.round(blinks/(durMs/60000)):null
+  };
+}
+function startVoice(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC||!M.stream) return;
+    M.ac=new AC();
+    if(M.ac.state==="suspended") M.ac.resume();
+    const src=M.ac.createMediaStreamSource(M.stream);
+    const an=M.ac.createAnalyser(); an.fftSize=1024;
+    src.connect(an);
+    const buf=new Uint8Array(an.fftSize);
+    M.vol=[];
+    M.vTimer=setInterval(function(){
+      an.getByteTimeDomainData(buf);
+      let sum=0;
+      for(let i=0;i<buf.length;i++){ const d=(buf[i]-128)/128; sum+=d*d; }
+      M.vol.push(Math.sqrt(sum/buf.length));
+    },200);
+  }catch(e){}
+}
+function stopVoice(){
+  if(M.vTimer){ clearInterval(M.vTimer); M.vTimer=null; }
+  if(M.ac){ try{M.ac.close()}catch(e){} M.ac=null; }
+}
+function voiceStats(){
+  const v=M.vol||[];
+  if(v.length<10) return null;
+  const spoken=v.filter(function(x){return x>0.02});
+  const avg=spoken.length?spoken.reduce(function(a,b){return a+b},0)/spoken.length:0;
+  const loud=Math.max(0,Math.min(100,Math.round(avg*420)));
+  const ratio=Math.round(spoken.length/v.length*100);
+  let gaps=0,run=0;
+  v.forEach(function(x){ if(x<=0.02){ run++; if(run===5) gaps++; } else run=0; });
+  const sorted=spoken.slice().sort(function(a,b){return a-b});
+  const lo=sorted[Math.floor(sorted.length*0.15)]||0, hi=sorted[Math.floor(sorted.length*0.85)]||0;
+  const swing=avg>0?Math.round((hi-lo)/avg*100):0;
+  return {loud:loud,ratio:ratio,gaps:gaps,swing:swing};
 }
 function stopMotion(){ if(M.mTimer){clearInterval(M.mTimer);M.mTimer=null;} }
 function stability(){
@@ -889,8 +1122,17 @@ function startSR(){
     }
     M.interim=interim; drawLive();
   };
-  r.onerror=function(){};
-  r.onend=function(){ if(M.srOn){ try{r.start()}catch(e){} } };
+  r.onerror=function(ev){
+    const err=ev&&ev.error;
+    if(err==="not-allowed"||err==="service-not-allowed"){
+      M.srOn=false;
+      $("sr-note").textContent="받아쓰기 권한이 막혀 있습니다. 녹화가 끝난 뒤 내용을 직접 적어 주세요.";
+    }
+  };
+  r.onend=function(){
+    if(!M.srOn||!M.recording) return;
+    setTimeout(function(){ if(M.srOn&&M.recording){ try{r.start()}catch(e){} } },600);
+  };
   M.sr=r; M.srOn=true;
   try{r.start()}catch(e){}
 }
@@ -904,7 +1146,7 @@ function drawLive(){
   box.scrollTop=box.scrollHeight;
 }
 function stopMedia(){
-  stopSR(); stopMotion();
+  stopSR(); stopMotion(); stopVoice(); stopFace();
   if(M.timer){clearInterval(M.timer);M.timer=null;}
   if(M.rec&&M.recording){try{M.rec.stop()}catch(e){}}
   M.recording=false;
@@ -931,18 +1173,49 @@ function onRecStop(){
   if(M.stream){ M.stream.getTracks().forEach(function(t){t.stop()}); M.stream=null; }
   const v=$("preview");
   try{
-    v.srcObject=null;
+    v.pause(); v.srcObject=null; v.removeAttribute("src"); v.load();
     if(M.url) URL.revokeObjectURL(M.url);
     M.url=URL.createObjectURL(blob);
-    v.src=M.url; v.muted=false; v.controls=true;
-    $("stage").classList.add("done"); $("camswap").hidden=true;
+    $("camswap").hidden=true;
   }catch(e){}
-  DRAFT={dur:dur,blob:blob,mime:M.mime||"video/webm",
+  DRAFT={dur:dur,blob:blob,mime:M.mime||"video/webm",mode:REC_MODE,practice:PRACTICE,
+         voice:voiceStats(), face:faceStats(dur),
          transcript:M.lines.map(function(l){return l.s}).join("\n"),
          stability:stability(),
          chars:M.lines.map(function(l){return l.s}).join("").replace(/\s/g,"").length};
   $("btn-rec").disabled=false; $("btn-rec").textContent="녹화 시작"; $("btn-rec").classList.remove("danger");
   renderCheck();
+}
+function metersHTML(d){
+  const f=d.face, mid=(d.mode==="audio")
+    ? {v:(d.voice?d.voice.loud+"점":"—"),l:"목소리 크기"}
+    : {v:(rateOf(d)||"—"),l:"말 속도(자/분)"};
+  const right=(f&&f.ok)
+    ? {v:f.frontRatio+"%",l:"정면 유지"}
+    : {v:(d.stability!=null?d.stability+"점":"—"),l:"자세 안정"};
+  let extra=[];
+  if(f&&f.ok){
+    extra.push(["미소 띤 시간",f.smileRatio+"%"]);
+    extra.push(["고개 흔들림",f.sway]);
+    if(f.browRatio>0) extra.push(["찡그림",f.browRatio+"%"]);
+    if(f.faceRatio<95) extra.push(["화면 안 얼굴",f.faceRatio+"%"]);
+  }
+  if(d.mode==="audio"&&d.voice){
+    extra.push(["말한 시간",d.voice.ratio+"%"]);
+    extra.push(["1초 이상 멈춤",d.voice.gaps+"회"]);
+    extra.push(["목소리 기복",d.voice.swing]);
+  }
+  let box='<div class="meters">'+
+    '<div class="meter"><b>'+mmss(d.durMs!=null?d.durMs:d.dur)+"</b><span>녹화 시간</span></div>"+
+    '<div class="meter"><b>'+mid.v+"</b><span>"+mid.l+"</span></div>"+
+    '<div class="meter"><b>'+right.v+"</b><span>"+right.l+"</span></div></div>";
+  for(let i=0;i<extra.length;i+=3){
+    box+='<div class="meters" style="margin-top:8px">'+
+      extra.slice(i,i+3).map(function(x){
+        return '<div class="meter"><b>'+x[1]+"</b><span>"+x[0]+"</span></div>";
+      }).join("")+"</div>";
+  }
+  return box;
 }
 function admLabel(s){ return [s.admType||"",s.adm||""].filter(Boolean).join(" · "); }
 function rateOf(d){ const min=(d.dur||0)/60000; return (min>0.2&&d.chars)?Math.round(d.chars/min):0; }
@@ -951,15 +1224,13 @@ function renderCheck(){
   $("step-record").hidden=true;
   const box=$("step-result"); box.hidden=false;
   box.innerHTML='<div class="card">'+
-    "<h2>받아쓴 내용 확인</h2>"+
-    '<p class="lede">틀린 낱말이나 빠진 말을 고쳐 주세요. 이 글을 근거로 피드백과 지도 일지가 만들어집니다.</p>'+
+    "<h2>"+(d.mode==="audio"?"연습 결과 확인":"받아쓴 내용 확인")+"</h2>"+
+    ''+
     (M.url?'<video controls playsinline src="'+M.url+'" style="width:100%;border-radius:10px;background:#0A141D;margin:0 0 12px"></video>':"")+
-    '<div class="meters">'+
-      '<div class="meter"><b>'+mmss(d.dur)+"</b><span>녹화 시간</span></div>"+
-      '<div class="meter"><b>'+(rateOf(d)||"—")+"</b><span>말 속도(자/분)</span></div>"+
-      '<div class="meter"><b>'+(d.stability!=null?d.stability+"점":"—")+"</b><span>자세 안정</span></div></div>"+
-    '<label class="f" style="margin-top:14px"><span>면접 내용</span>'+
-      '<textarea id="tr-edit" style="min-height:230px" placeholder="예) 자기소개를 해 보세요.&#10;네, 저는 …">'+esc(d.transcript)+"</textarea></label>"+
+    metersHTML(d)+
+    '<label class="f" style="margin-top:14px"><span>'+(d.mode==="audio"?"연습한 질문과 답변 (적어 두면 내용 피드백도 드립니다)":"면접 내용")+"</span>"+
+      '<textarea id="tr-edit" style="min-height:'+(d.mode==="audio"?"140":"230")+'px" placeholder="예) 자기소개를 해 보세요.&#10;네, 저는 …">'+esc(d.transcript)+"</textarea></label>"+
+    (d.transcript||d.mode==="audio"?'':'<div class="notice warn">받아쓴 내용이 없습니다. 위 칸에 면접에서 오간 질문과 답변을 직접 적어 주세요. 안드로이드 크롬에서 \'받아쓰기 우선\'으로 녹화하면 자동으로 적힙니다.</div>')+
     '<p class="hint">선생님 질문과 학생 답변을 줄을 바꿔 적으면 더 정확하게 나뉩니다.</p>'+
     '<p class="err" id="fb-err"></p>'+
     '<div class="btnrow">'+
@@ -997,26 +1268,70 @@ async function makeFeedback(){
   const d=DRAFT, S=SETUP;
   d.transcript=$("tr-edit").value.trim();
   const err=$("fb-err"); err.textContent="";
-  if(d.transcript.length<30) return err.textContent="면접 내용이 너무 짧습니다. 30자 이상 적어 주세요.";
+  if(d.mode!=="audio"&&d.transcript.length<30) return err.textContent="면접 내용이 너무 짧습니다. 30자 이상 적어 주세요.";
   const btn=$("btn-fb"); btn.disabled=true; btn.innerHTML='<i class="spin"></i> 만드는 중…';
   let out=null;
-  {
-    const prompt="너는 고등학교 3학년 대입 모의면접을 지도하는 진학 담당 교사다.\n"+
-"아래는 한 학생의 모의면접을 마이크 하나로 녹음해 자동으로 받아쓴 글이다. 교사의 질문과 학생의 답변이 섞여 있다.\n"+
-"의문형·요청형 문장(…해 보세요, …인가요, …이유는)은 대체로 교사의 질문이고 나머지는 학생의 답변이다.\n"+
-"받아쓰기라 오탈자가 있으니 문맥으로 읽어라. 글에 없는 사실은 절대 지어내지 마라.\n\n"+
-"[면접 정보]\n학과·모집단위: "+S.major+" / 전형: "+(admLabel(S)||"미기재")+"\n"+
-"녹화 시간: "+mmss(d.dur)+" / 말 속도: "+rateOf(d)+"자·분 / 자세 안정 지표: "+
-(d.stability!=null?d.stability+"점(100점 만점, 화면 움직임량 기반 참고치)":"측정 안 됨")+"\n\n"+
-"[받아쓴 면접 내용]\n"+d.transcript+"\n\n"+
-"교사의 질문은 4~5개만 골라라. 그보다 적게 보이면 있는 만큼만 넣어라.\n"+
-"아래 JSON 형식 그대로, 다른 말 없이 출력하라.\n"+SCHEMA;
-    try{ out=await aiJSON(prompt); }
-    catch(e){ toast("자동 피드백 실패: "+e.message); }
-  }
+  try{ out=await aiJSON(buildPrompt(d,S)); }
+  catch(e){ toast("자동 피드백 실패: "+e.message); }
   if(!out||!out.student) out=localFallback(d);
   await saveSession(d,S,out);
 }
+
+function buildPrompt(d,S){
+  const solo=(d.mode==="audio");
+  const 지표=[];
+  지표.push("녹화 시간 "+mmss(d.dur));
+  if(!solo) 지표.push("말 속도 "+rateOf(d)+"자·분");
+  if(d.voice){
+    지표.push("목소리 크기 "+d.voice.loud+"점(100점 만점)");
+    지표.push("말한 시간 비율 "+d.voice.ratio+"%");
+    지표.push("1초 이상 멈춤 "+d.voice.gaps+"회");
+    지표.push("목소리 기복 "+d.voice.swing+"(0에 가까우면 단조로움, 60 이상이면 기복이 큼)");
+  }
+  const f=d.face;
+  if(f&&f.ok){
+    지표.push("정면 유지 "+f.frontRatio+"%(얼굴 인식 기준, 카메라 쪽을 본 시간)");
+    지표.push("미소 띤 시간 "+f.smileRatio+"%");
+    지표.push("고개 좌우 흔들림 "+f.sway+"(0에 가까우면 고정, 15 이상이면 산만)");
+    지표.push("고개 위아래 움직임 "+f.nod);
+    if(f.browRatio>0) 지표.push("미간을 찌푸린 시간 "+f.browRatio+"%");
+    if(f.faceRatio<95) 지표.push("얼굴이 화면에 잡힌 비율 "+f.faceRatio+"%");
+    if(f.blinkPerMin!=null) 지표.push("분당 눈 깜빡임 "+f.blinkPerMin+"회(보통 15~20회)");
+  }else if(d.stability!=null){
+    지표.push("자세 안정 "+d.stability+"점(화면 움직임량 기반, 표정 분석 아님)");
+  }
+
+  const 머리="너는 고등학교 3학년 대입 모의면접을 지도하는 진학 담당 교사다.\n"+
+    "글에 없는 사실은 절대 지어내지 마라. 측정 지표를 근거 없이 부풀려 해석하지 마라.\n\n"+
+    "[면접 정보]\n학과·모집단위: "+S.major+" / 전형: "+(admLabel(S)||"미기재")+"\n"+
+    "[측정 지표]\n"+지표.join(" / ")+"\n\n";
+
+  if(!solo){
+    return 머리+
+"아래는 선생님과 한 모의면접을 마이크 하나로 녹음해 자동으로 받아쓴 글이다. 교사의 질문과 학생의 답변이 섞여 있다.\n"+
+"의문형·요청형 문장(…해 보세요, …인가요, …이유는)은 대체로 교사의 질문이고 나머지는 학생의 답변이다.\n"+
+"받아쓰기라 오탈자가 있으니 문맥으로 읽어라.\n\n"+
+"[받아쓴 면접 내용]\n"+d.transcript+"\n\n"+
+"이 방식은 소리를 따로 담지 않았으므로 목소리 크기나 성량에 대해서는 말하지 마라.\n"+
+"피드백은 (1) 답변 내용 (2) 말투와 말의 구성 (3) 표정과 시선 순으로 무게를 두어라.\n"+
+"교사의 질문은 4~5개만 골라라. 그보다 적게 보이면 있는 만큼만 넣어라.\n"+
+"아래 JSON 형식 그대로, 다른 말 없이 출력하라.\n"+SCHEMA;
+  }
+
+  return 머리+
+"학생이 집에서 혼자 한 연습이다. 받아쓴 글은 없고 목소리와 화면 움직임만 쟀다.\n"+
+(d.transcript?("학생이 직접 적어 둔 연습 내용:\n"+d.transcript+"\n\n"):"학생이 적어 둔 내용은 없다.\n\n")+
+"피드백은 (1) 표정과 시선 (2) 목소리 (3) 말투와 흐름 순으로 무게를 두어라.\n"+
+(f&&f.ok
+ ?"표정 지표는 얼굴 인식으로 실제 측정한 값이다. 다만 기계가 잰 참고치이므로 단정적으로 평가하지 말고, "+
+  "수치가 왜 그렇게 나왔을지 짚고 무엇을 바꾸면 되는지 알려 주어라. "+
+  "미소 비율이 0에 가까워도 면접에서 웃어야만 좋은 것은 아니니, 표정이 굳지 않았는지 스스로 확인하라는 정도로 써라.\n"
+ :"표정은 측정되지 않았다. 표정을 단정하지 말고, 녹화를 다시 보며 스스로 확인할 점을 짚어 주어라.\n")+
+"학생이 적어 둔 내용이 없으면 답변 내용에 대해 억측하지 말고 목소리와 태도에 집중하라.\n"+
+"teacher 항목의 questions는 빈 배열, opinion은 빈 문자열로 두어라.\n"+
+"아래 JSON 형식 그대로, 다른 말 없이 출력하라.\n"+SCHEMA;
+}
+
 function localFallback(d){
   const lines=d.transcript.split(/\n+/).map(function(s){return s.trim()}).filter(Boolean);
   const qs=lines.filter(function(s){return QRE.test(s)}).slice(0,5)
@@ -1054,7 +1369,8 @@ function buildGuidance(qs){
 }
 async function saveSession(d,S,out){
   const id="v"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const qs=(out.teacher&&out.teacher.questions)||[];
+  const solo=(d.mode==="audio"&&(!S.tids||!S.tids.length));
+  const qs=solo?[]:((out.teacher&&out.teacher.questions)||[]);
   const data={
     id:id, sid:ME.sid, name:ME.name,
     univ:S.univ, major:S.major, adm:S.adm, admType:S.admType, teachers:S.teachers,
@@ -1083,13 +1399,15 @@ function renderStudentReport(s){
   const box=$("step-result"); box.hidden=false;
   box.innerHTML='<div class="card">'+
     "<h2>"+esc(s.univ)+" "+esc(s.major)+" 모의면접 피드백</h2>"+
-    '<p class="lede">'+korDate(s.date,s.time)+" · "+esc((s.teachers||[]).join(", "))+" 선생님 · "+mmss(s.durMs)+"</p>"+
+    '<p class="lede">'+korDate(s.date,s.time)+" · "+((s.teachers&&s.teachers.length)?esc(s.teachers.join(", "))+" 선생님":"혼자 연습")+" · "+mmss(s.durMs)+"</p>"+
     fbBlock(s.fb)+
     '<div class="btnrow">'+
       '<button class="btn" type="button" onclick="App.stTab(\'storage\')">내 기록에서 보기</button>'+
       '<button class="btn ghost" type="button" onclick="App.printReport(\''+s.id+'\')">인쇄 · PDF 저장</button>'+
       '<button class="btn ghost" type="button" onclick="App.newPractice()">한 번 더 연습</button></div>'+
-    '<p class="hint" style="margin-top:12px">선생님께 드리는 면접지도 일지도 함께 만들어졌습니다. 일지는 선생님 화면에서만 열립니다.</p></div>';
+    ((s.teachers&&s.teachers.length)
+      ?'<p class="hint" style="margin-top:12px">선생님께 드리는 면접지도 일지도 함께 만들어졌습니다. 일지는 선생님 화면에서만 열립니다.</p>'
+      :'<p class="hint" style="margin-top:12px">혼자 한 연습이라 이 기록은 본인만 볼 수 있습니다.</p>')+"</div>";
   window.scrollTo(0,0);
 }
 
@@ -1110,7 +1428,7 @@ async function renderStorage(){
     html+='<div class="item" onclick="App.openSession(\''+s.id+'\')">'+
       '<span class="badge">'+mmss(s.durMs)+"</span>"+
       '<div class="t">'+esc(s.univ)+" "+esc(s.major)+"</div>"+
-      '<div class="m">'+korDate(s.date,s.time)+" · "+esc((s.teachers||[]).join(", "))+" 선생님"+(s.hasVideo?"":" · 영상 없음")+"</div></div>";
+      '<div class="m">'+korDate(s.date,s.time)+" · "+((s.teachers&&s.teachers.length)?esc(s.teachers.join(", "))+" 선생님":"혼자 연습")+(s.hasVideo?"":" · 영상 없음")+"</div></div>";
   });
   box.innerHTML=html;
 }
@@ -1120,12 +1438,9 @@ async function openSession(id){
   box.innerHTML='<div class="card">'+
     '<button class="btn ghost sm" type="button" onclick="App.renderStorage()">← 목록</button>'+
     '<h2 style="margin-top:12px">'+esc(s.univ)+" "+esc(s.major)+"</h2>"+
-    '<p class="lede">'+korDate(s.date,s.time)+(admLabel(s)?" · "+esc(admLabel(s)):"")+" · "+esc((s.teachers||[]).join(", "))+" 선생님</p>"+
+    '<p class="lede">'+korDate(s.date,s.time)+(admLabel(s)?" · "+esc(admLabel(s)):"")+" · "+((s.teachers&&s.teachers.length)?esc(s.teachers.join(", "))+" 선생님":"혼자 연습")+"</p>"+
     '<div id="vbox"></div>'+
-    '<div class="meters">'+
-      '<div class="meter"><b>'+mmss(s.durMs)+"</b><span>녹화 시간</span></div>"+
-      '<div class="meter"><b>'+(s.rate||"—")+"</b><span>말 속도(자/분)</span></div>"+
-      '<div class="meter"><b>'+(s.stability!=null?s.stability:"—")+"</b><span>자세 안정</span></div></div>"+
+    metersHTML(s)+
     fbBlock(s.fb)+
     "<h3>받아쓴 면접 내용</h3>"+
     '<div class="live" style="max-height:230px">'+esc(s.transcript||"").split("\n").map(function(x){return "<div>"+x+"</div>"}).join("")+"</div>"+
@@ -1423,7 +1738,33 @@ async function saveVideo(id){
 }
 
 /* ======================= 시작 ======================= */
+function inAppBrowser(){
+  const ua=navigator.userAgent||"";
+  return /KAKAOTALK|Instagram|FBAN|FBAV|FB_IAB|NAVER\(inapp|DaumApps|Line\/|everytime|Whale\/.*inapp/i.test(ua);
+}
+function showInAppWarning(){
+  const box=$("inapp"); if(!box) return;
+  const android=/Android/i.test(navigator.userAgent);
+  box.hidden=false;
+  box.innerHTML='<b>카카오톡 등 앱 안에서는 카메라가 제대로 켜지지 않습니다.</b><br>'+
+    '말할 때마다 권한을 다시 묻거나 화면이 까맣게 나옵니다. '+
+    (android?'아래 버튼을 누르거나 ':'')+'오른쪽 아래 <b>⋮</b> 또는 <b>공유</b> → '+
+    (android?'<b>다른 브라우저로 열기</b> → 크롬':'<b>Safari로 열기</b>')+' 을 골라 주세요.'+
+    '<div class="r">'+
+    (android?'<button type="button" onclick="App.openChrome()">크롬으로 열기</button>':'')+
+    '<button type="button" onclick="App.copyLink()">주소 복사</button></div>';
+}
+function openChrome(){
+  const u=location.href.replace(/^https?:\/\//,"");
+  location.href="intent://"+u+"#Intent;scheme=https;package=com.android.chrome;end";
+}
+function copyLink(){
+  const t=location.href;
+  try{ navigator.clipboard.writeText(t); toast("주소를 복사했습니다. 크롬에 붙여넣어 주세요"); }
+  catch(e){ prompt("이 주소를 복사해 크롬에 붙여넣어 주세요", t); }
+}
 async function boot(){
+  if(inAppBrowser()) showInAppWarning();
   await initApi();
   if(!API_OK) return;
   try{ if(await restoreSession()) return; }catch(e){}
@@ -1436,7 +1777,7 @@ window.addEventListener("beforeunload",function(){ if(M.recording) stopMedia(); 
 const App={
   authTab:authTab, loginStudent:loginStudent, loginTeacher:loginTeacher, logout:logout,
   showReset:showReset, hideReset:hideReset, showWipe:showWipe, doReset:doReset, doWipe:doWipe,
-  stTab:stTab, goRecord:goRecord, toggleRec:toggleRec, cancelRecord:cancelRecord, switchCam:switchCam,
+  stTab:stTab, goRecord:goRecord, toggleRec:toggleRec, cancelRecord:cancelRecord, switchCam:switchCam, retryCam:retryCam, setMode:setMode, setPractice:setPractice, toggleFace:toggleFace, openChrome:openChrome, copyLink:copyLink,
   makeFeedback:makeFeedback, discardDraft:discardDraft, newPractice:newPractice,
   renderStorage:renderStorage, openSession:openSession, delSession:delSession, saveVideo:saveVideo,
   printReport:printReport, printJournal:printJournal, printAllJournals:printAllJournals,
