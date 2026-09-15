@@ -168,7 +168,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v2.8</span></div>
+  <div class="brand">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v2.9</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -325,7 +325,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </main>
 
 <div class="foot">
-  <b>버전 2.8</b> · 2026-09-15<br>
+  <b>버전 2.9</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -431,24 +431,34 @@ async function inRoster(sid,name){
 
 /* ======================= 서버 연결 ======================= */
 /*  ↓↓↓  아래 따옴표 안에 Apps Script 웹 앱 주소를 붙여넣으세요  ↓↓↓  */
-const API_URL = "https://script.google.com/macros/s/AKfycbwY4qw3ATplqCyFbBjQ4-p8_f3EAjKKxaPcNxkisJBGhDQqSpRbyFyME3Wzwy_t0_NH/exec";
+const API_URL = "여기에_주소를_붙여넣으세요";
 /*  ↑↑↑  https://script.google.com/macros/s/... /exec 로 끝나는 주소  ↑↑↑  */
 
 const LSK="jhmz3:";
 let API_OK=false;
 
-async function api(action,payload){
+async function api(action,payload,ms){
   if(API_URL.indexOf("script.google.com")<0) throw new Error("서버 주소가 아직 연결되지 않았습니다");
-  const res=await fetch(API_URL,{method:"POST",
-    headers:{"Content-Type":"text/plain;charset=utf-8"},
-    body:JSON.stringify(Object.assign({action:action},payload||{}))});
+  const ctl=("AbortController" in window)?new AbortController():null;
+  const tm=setTimeout(function(){ if(ctl) ctl.abort(); },ms||30000);
+  let res;
+  try{
+    res=await fetch(API_URL,{method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify(Object.assign({action:action},payload||{})),
+      signal:ctl?ctl.signal:undefined});
+  }catch(e){
+    clearTimeout(tm);
+    throw new Error((e&&e.name==="AbortError")?"시간이 너무 오래 걸려 멈췄습니다":"서버에 닿지 못했습니다");
+  }
+  clearTimeout(tm);
   const txt=await res.text();
   let j; try{ j=JSON.parse(txt); }catch(e){ throw new Error("서버 응답을 읽지 못했습니다"); }
   if(!j.ok) throw new Error(j.error||"서버 오류");
   return j;
 }
 async function aiJSON(prompt){
-  const r=await api("ai",{prompt:prompt});
+  const r=await api("ai",{prompt:prompt},70000);
   let t=String(r.text||"").trim().replace(/^```[a-z]*/i,"").replace(/```$/,"").trim();
   return JSON.parse(t);
 }
@@ -1328,9 +1338,13 @@ async function makeFeedback(){
   const err=$("fb-err"); err.textContent="";
   if(d.mode!=="audio"&&d.transcript.length<30) return err.textContent="면접 내용이 너무 짧습니다. 30자 이상 적어 주세요.";
   const btn=$("btn-fb"); btn.disabled=true; btn.innerHTML='<i class="spin"></i> 만드는 중…';
+  const slow=setTimeout(function(){ if(btn) btn.innerHTML='<i class="spin"></i> 조금 더 걸립니다…'; },18000);
   let out=null;
   try{ out=await aiJSON(buildPrompt(d,S)); }
-  catch(e){ toast("자동 피드백 실패: "+e.message); }
+  catch(e){
+    err.innerHTML="자동 피드백을 받지 못했습니다. ("+esc(e.message)+")<br>측정값 요약으로 저장했습니다. 기록에서 <b>다시 만들기</b>를 눌러 나중에 다시 받을 수 있습니다.";
+  }
+  clearTimeout(slow);
   if(!out||!out.student) out=localFallback(d);
   await saveSession(d,S,out);
 }
@@ -1503,6 +1517,7 @@ async function openSession(id){
     "<h3>받아쓴 면접 내용</h3>"+
     '<div class="live" style="max-height:230px">'+esc(s.transcript||"").split("\n").map(function(x){return "<div>"+x+"</div>"}).join("")+"</div>"+
     '<div class="btnrow">'+
+      '<button class="btn ghost" type="button" onclick="App.redoFeedback(\''+s.id+'\')">피드백 다시 만들기</button>'+
       '<button class="btn ghost" type="button" onclick="App.printReport(\''+s.id+'\')">인쇄 · PDF 저장</button>'+
       '<button class="btn ghost" type="button" onclick="App.saveVideo(\''+s.id+'\')">영상 내려받기</button>'+
       '<button class="btn danger" type="button" onclick="App.delSession(\''+s.id+'\')">삭제</button></div></div>';
@@ -1782,6 +1797,26 @@ function importFile(ev){
   };
   r.readAsText(f);
 }
+async function redoFeedback(id){
+  const e=await findEntry(id); if(!e) return toast("기록을 찾을 수 없습니다");
+  const s=e.data;
+  toast("다시 만드는 중…");
+  try{
+    const out=await aiJSON(buildPrompt(
+      {dur:s.durMs,mode:s.mode||"stt",transcript:s.transcript,voice:s.voice,face:s.face,
+       stability:s.stability,chars:s.chars},
+      {major:s.major,adm:s.adm,admType:s.admType}));
+    if(out&&out.student){
+      s.fb=out.student;
+      const qs=(s.practice==="solo")?[]:((out.teacher&&out.teacher.questions)||[]);
+      if(qs.length) s.journal=Object.assign({},s.journal,
+        {questions:qs,guidance:buildGuidance(qs),opinion:(out.teacher&&out.teacher.opinion)||"",edited:false});
+      await reseal(e);
+      toast("피드백을 다시 만들었습니다");
+      openSession(id);
+    }else toast("다시 만들지 못했습니다");
+  }catch(err){ toast("실패: "+err.message); }
+}
 async function delSession(id){
   if(!confirm("이 기록을 지울까요? 되돌릴 수 없습니다.")) return;
   await Store.del("sess",id); await VDB.del(id);
@@ -1837,7 +1872,7 @@ const App={
   showReset:showReset, hideReset:hideReset, showWipe:showWipe, doReset:doReset, doWipe:doWipe,
   stTab:stTab, goRecord:goRecord, toggleRec:toggleRec, cancelRecord:cancelRecord, switchCam:switchCam, retryCam:retryCam, setMode:setMode, setPractice:setPractice, toggleFace:toggleFace, openChrome:openChrome, copyLink:copyLink,
   makeFeedback:makeFeedback, discardDraft:discardDraft, newPractice:newPractice,
-  renderStorage:renderStorage, openSession:openSession, delSession:delSession, saveVideo:saveVideo,
+  renderStorage:renderStorage, openSession:openSession, redoFeedback:redoFeedback, delSession:delSession, saveVideo:saveVideo,
   printReport:printReport, printJournal:printJournal, printAllJournals:printAllJournals,
   tList:tList, tStudent:tStudent, tSession:tSession, saveJournal:saveJournal, regen:regen,
   renderSettings:renderSettings, changePw:changePw, reissue:reissue,
