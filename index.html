@@ -181,7 +181,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v3.3</span></div>
+  <div class="brand">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v3.4</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -338,7 +338,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </main>
 
 <div class="foot">
-  <b>버전 3.3</b> · 2026-09-15<br>
+  <b>버전 3.4</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -558,8 +558,10 @@ async function newRecovery(doc,mkRaw){
 
 /* ---------- 교사 공개 목록 ---------- */
 async function loadDir(){
-  const d=await Store.get("dir","teachers");
-  DIR=(d&&d.list)||[];
+  try{
+    const d=await Store.get("dir","teachers");
+    DIR=(d&&d.list)||[];
+  }catch(e){ DIR=[]; console.warn("dir",e); }
   return DIR;
 }
 async function addToDir(entry){
@@ -670,6 +672,14 @@ function logout(){
   $("pane-storage").innerHTML=""; $("pane-settings").innerHTML=""; $("pane-teacher").innerHTML="";
   $("step-result").innerHTML=""; $("s-admtype").value=""; $("step-result").hidden=true; $("step-record").hidden=true; $("step-setup").hidden=false;
   window.scrollTo(0,0);
+}
+function paneError(boxId,msg,retry){
+  const b=$(boxId); if(!b) return;
+  b.innerHTML='<div class="card"><h2>화면을 열지 못했습니다</h2>'+
+    '<div class="notice warn">'+esc(msg||"알 수 없는 오류")+"</div>"+
+    '<div class="btnrow">'+
+    (retry?'<button class="btn" type="button" onclick="'+retry+'">다시 시도</button>':"")+
+    '<button class="btn ghost" type="button" onclick="App.logout()">로그아웃</button></div></div>';
 }
 function topbarWho(){
   $("who").innerHTML="<span>"+esc(ME.name)+(ME.role==="teacher"?" 선생님":"")+"</span>"+
@@ -796,7 +806,8 @@ async function enterStudent(){
   $("view-auth").hidden=true; $("view-teacher").hidden=true; $("view-student").hidden=false;
   topbarWho(); stTab("practice");
   $("s-date").value=todayStr(); $("s-time").value=nowStr();
-  await loadDir(); drawChips(); setPractice("with");
+  try{ await loadDir(); }catch(e){}
+  drawChips(); setPractice("with");
   window.scrollTo(0,0);
 }
 function stTab(w){
@@ -1500,6 +1511,10 @@ function renderStudentReport(s){
 /* ======================= 내 기록 ======================= */
 async function renderStorage(){
   const box=$("pane-storage");
+  try{ await renderStorageInner(box); }
+  catch(e){ paneError("pane-storage","기록을 불러오지 못했습니다: "+((e&&e.message)||e),"App.renderStorage()"); }
+}
+async function renderStorageInner(box){
   box.innerHTML='<div class="card"><p class="lede"><i class="spin"></i> 여는 중…</p></div>';
   const all=await loadMine();
   let html='<div class="card"><h2>내 연습 기록</h2>'+
@@ -1549,10 +1564,19 @@ async function openSession(id){
 let CUR=null;
 async function enterTeacher(){
   $("view-auth").hidden=true; $("view-student").hidden=true; $("view-teacher").hidden=false;
-  topbarWho(); await loadDir(); await tList(); window.scrollTo(0,0);
+  topbarWho();
+  $("pane-teacher").innerHTML='<div class="card"><p class="lede"><i class="spin"></i> 여는 중…</p></div>';
+  try{ await loadDir(); }catch(e){}
+  try{ await tList(); }
+  catch(e){ paneError("pane-teacher","기록을 불러오는 중 문제가 생겼습니다: "+((e&&e.message)||e),"App.tList()"); }
+  window.scrollTo(0,0);
 }
 async function tList(){
   const box=$("pane-teacher");
+  try{ await tListInner(box); }
+  catch(e){ paneError("pane-teacher","기록을 불러오지 못했습니다: "+((e&&e.message)||e),"App.tList()"); }
+}
+async function tListInner(box){
   box.innerHTML='<div class="card"><p class="lede"><i class="spin"></i> 여는 중…</p></div>';
   const ss=await loadMine(), by={};
   ss.forEach(function(e){
@@ -1900,7 +1924,11 @@ async function boot(){
   let h=null; try{ h=JSON.parse(localStorage.getItem(LSK+"hint")||"null"); }catch(e){}
   if(h&&h.role==="teacher") authTab("tc");
 }
-window.addEventListener("unhandledrejection",function(){ toast("서버 연결에 문제가 있습니다. 잠시 뒤 다시 해 주세요."); });
+window.addEventListener("unhandledrejection",function(ev){
+  const m=(ev&&ev.reason&&ev.reason.message)||"서버 연결에 문제가 있습니다";
+  toast(m);
+  console.error("unhandled",ev&&ev.reason);
+});
 window.addEventListener("beforeunload",function(){ if(M.recording) stopMedia(); });
 
 const App={
