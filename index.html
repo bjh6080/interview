@@ -6,6 +6,9 @@
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
 <meta name="googlebot" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>중화고 면접 연습기</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -165,7 +168,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand">중화고 면접 연습기</div>
+  <div class="brand">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v2.8</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -322,6 +325,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </main>
 
 <div class="foot">
+  <b>버전 2.8</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -806,6 +810,18 @@ function setPractice(m){
     $("prac-note").textContent="집에서 혼자 하는 연습입니다. 목소리와 표정 위주로 피드백을 드리고, 기록은 본인만 볼 수 있습니다. 일지는 만들지 않습니다.";
   }
 }
+function srStatus(t){ const n=$("sr-note"); if(n) n.textContent="받아쓰기 상태 — "+t; }
+async function ensureMic(){
+  try{
+    const st=await navigator.mediaDevices.getUserMedia({audio:true});
+    st.getTracks().forEach(function(t){t.stop()});
+    srStatus("마이크 준비됨");
+    return true;
+  }catch(e){
+    srStatus("마이크를 쓸 수 없습니다 ("+(e&&e.name)+"). 주소창 왼쪽 아이콘 → 권한 → 마이크를 허용해 주세요.");
+    return false;
+  }
+}
 function needAudio(){ return !(REC_MODE==="stt" && isMobileDev()); }
 async function restartCamera(){
   if(M.stream){ M.stream.getTracks().forEach(function(t){t.stop()}); M.stream=null; }
@@ -898,6 +914,7 @@ async function startCamera(){
     $("stage").classList.toggle("mirror",FACING==="user");
     $("camswap").disabled=false; showSwapIfMulti();
     initMode(); faceBtn(); loadFace();
+    if(!needAudio()&&hasSR()) ensureMic();
     $("sr-note").textContent=hasSR()
       ? "질문과 답변이 자동으로 받아쓰입니다. 틀린 부분은 녹화가 끝난 뒤 고칠 수 있습니다."
       : "이 브라우저는 자동 받아쓰기를 지원하지 않습니다. 녹화가 끝나면 내용을 직접 적어 주세요. 안드로이드는 크롬으로 열면 자동으로 받아씁니다.";
@@ -948,7 +965,7 @@ function startRec(){
   M.timer=setInterval(tick,250);
   $("mode-stt").disabled=true; $("mode-audio").disabled=true;
   startMotion(); startFace();
-  if(REC_MODE==="stt") startSR(); else startVoice();
+  if(REC_MODE==="stt"){ srStatus("시작하는 중"); startSR(); } else startVoice();
   $("live").innerHTML='<span class="interim">듣고 있습니다…</span>';
   if(REC_MODE==="stt"){
     setTimeout(function(){
@@ -1143,7 +1160,7 @@ function stability(){
 function startSR(){
   if(!hasSR()) return;
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  const r=new SR(); r.lang="ko-KR"; r.continuous=true; r.interimResults=true; r.maxAlternatives=1;
+  const r=new SR(); r.lang="ko-KR"; r.continuous=!isMobileDev(); r.interimResults=true; r.maxAlternatives=1;
   r.onresult=function(ev){
     let interim="";
     for(let i=ev.resultIndex;i<ev.results.length;i++){
@@ -1152,17 +1169,27 @@ function startSR(){
       else interim+=t;
     }
     M.interim=interim; drawLive();
+    if(M.lines.length) srStatus("받은 문장 "+M.lines.length+"개");
   };
+  r.onstart=function(){ srStatus("듣는 중"); };
+  r.onspeechstart=function(){ srStatus("말소리를 잡았습니다"); };
+  r.onnomatch=function(){ srStatus("말을 알아듣지 못했습니다. 조금 더 또렷하게 말해 주세요."); };
   r.onerror=function(ev){
-    const err=ev&&ev.error;
+    const err=(ev&&ev.error)||"unknown";
+    if(err==="no-speech"){ srStatus("소리가 들리지 않습니다. 마이크 쪽으로 말해 주세요."); return; }
+    if(err==="aborted"){ return; }
     if(err==="not-allowed"||err==="service-not-allowed"){
       M.srOn=false;
-      $("sr-note").textContent="받아쓰기 권한이 막혀 있습니다. 녹화가 끝난 뒤 내용을 직접 적어 주세요.";
+      srStatus("마이크 권한이 막혀 있습니다. 주소창 왼쪽 아이콘 → 권한 → 마이크를 허용한 뒤 새로고침해 주세요.");
+      return;
     }
+    if(err==="network"){ srStatus("인터넷이 끊겨 받아쓰기를 못 합니다. 연결을 확인해 주세요."); return; }
+    srStatus("오류: "+err);
   };
   r.onend=function(){
-    if(!M.srOn||!M.recording) return;
-    setTimeout(function(){ if(M.srOn&&M.recording){ try{r.start()}catch(e){} } },600);
+    if(!M.srOn||!M.recording){ return; }
+    srStatus("다시 듣는 중 (받은 문장 "+M.lines.length+"개)");
+    setTimeout(function(){ if(M.srOn&&M.recording){ try{r.start()}catch(e){} } },250);
   };
   M.sr=r; M.srOn=true;
   try{r.start()}catch(e){}
