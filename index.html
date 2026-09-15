@@ -38,7 +38,9 @@ a{color:var(--navy-500)}
 :focus-visible{outline:2px solid var(--navy-500);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 input:focus::placeholder,textarea:focus::placeholder{color:transparent}
-input::placeholder,textarea::placeholder{color:var(--muted);opacity:.6}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:.62;font-size:13px;letter-spacing:-.01em}
+select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px}
+select:invalid{color:var(--muted)}
 
 .topbar{position:sticky;top:0;z-index:40;display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--navy-900);color:#fff}
 .topbar .brand{font-family:var(--serif);font-weight:700;font-size:18px;letter-spacing:-.01em}
@@ -86,10 +88,14 @@ textarea{min-height:110px;line-height:1.7;resize:vertical}
 
 .empty{border:1px dashed var(--rule-strong);border-radius:10px;padding:28px 18px;text-align:center;color:var(--muted);font-size:14px}
 .stage{position:relative;background:#0A141D;border-radius:10px;overflow:hidden;aspect-ratio:3/4;max-height:58vh;margin:0 auto}
-.stage video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+.stage video{width:100%;height:100%;object-fit:cover;display:block}
+.stage.mirror video{transform:scaleX(-1)}
 .stage.done video{transform:none}
 .stage .veil{position:absolute;inset:0;display:grid;place-content:center;color:#fff;font-size:14px;text-align:center;padding:20px;background:rgba(10,20,29,.82)}
 .reclamp{position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:7px;background:rgba(10,20,29,.62);color:#fff;padding:5px 11px;border-radius:999px;font-size:13px;font-variant-numeric:tabular-nums}
+.camswap{position:absolute;top:10px;right:10px;background:rgba(10,20,29,.62);color:#fff;border:1px solid rgba(255,255,255,.3);
+  padding:6px 12px;border-radius:999px;font-size:13px;cursor:pointer}
+.camswap:disabled{opacity:.4}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--signal)}
 .rec .dot{animation:blink 1.4s infinite}
 @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.25}}
@@ -227,11 +233,18 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
     <div class="card" id="step-setup">
       <h2>오늘 연습할 면접</h2>
       <p class="lede">일지에 그대로 들어갑니다. 정확히 적어 주세요.</p>
-      <label class="f"><span>대학</span><input type="text" id="s-univ" placeholder="○○대학교"></label>
       <div class="row">
-        <label class="f"><span>학과·모집단위</span><input type="text" id="s-major" placeholder="사회학과"></label>
-        <label class="f"><span>전형명</span><input type="text" id="s-adm" placeholder="해당 대학의 정확한 전형 명칭"></label>
+        <label class="f"><span>대학</span><input type="text" id="s-univ" placeholder="○○대학교"></label>
+        <label class="f"><span>전형 유형</span>
+          <select id="s-admtype" required>
+            <option value="" selected>고르세요</option>
+            <option>학생부종합</option>
+            <option>학생부교과</option>
+            <option>기타</option>
+          </select></label>
       </div>
+      <label class="f"><span>학과·모집단위</span><input type="text" id="s-major" placeholder="사회학과"></label>
+      <label class="f"><span>전형명</span><input type="text" id="s-adm" placeholder="해당 대학의 정확한 전형 명칭"></label>
       <div style="margin-bottom:9px"><span style="display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--navy-700)">지도교사</span></div>
       <div class="chips" id="teacher-chips"></div>
       <p class="hint">여러 명이면 모두 고르세요. 고른 선생님만 이 기록을 열어 볼 수 있습니다.</p>
@@ -246,11 +259,12 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
     <div class="card" id="step-record" hidden>
       <h2 id="rec-title">모의면접 녹화</h2>
-      <p class="lede">휴대폰을 눈높이에 세우고 상반신이 보이게 두세요.</p>
+      <p class="lede">휴대폰을 눈높이에 세우고 상반신이 보이게 두세요. 다른 사람이 찍어 줄 때는 오른쪽 위에서 카메라를 바꾸세요.</p>
       <div class="stage" id="stage">
         <video id="preview" playsinline muted autoplay></video>
         <div class="veil" id="veil">카메라를 켜는 중입니다</div>
         <div class="reclamp" id="reclamp" hidden><i class="dot"></i><span id="clock">0:00</span></div>
+        <button type="button" class="camswap" id="camswap" hidden onclick="App.switchCam()">카메라 전환</button>
       </div>
       <div class="meters">
         <div class="meter"><b id="m-time">0:00</b><span>녹화 시간</span></div>
@@ -592,7 +606,7 @@ function logout(){
   $("who").innerHTML='<span class="by">제작: 변준한</span>';
   $("st-pw").value=""; $("tc-pw").value=""; $("tc-code").value="";
   $("pane-storage").innerHTML=""; $("pane-settings").innerHTML=""; $("pane-teacher").innerHTML="";
-  $("step-result").innerHTML=""; $("step-result").hidden=true; $("step-record").hidden=true; $("step-setup").hidden=false;
+  $("step-result").innerHTML=""; $("s-admtype").value=""; $("step-result").hidden=true; $("step-record").hidden=true; $("step-setup").hidden=false;
   window.scrollTo(0,0);
 }
 function topbarWho(){
@@ -748,6 +762,7 @@ function pickedNames(){
 }
 
 /* ======================= 녹화 ======================= */
+let FACING="user";
 const M={stream:null,rec:null,chunks:[],mime:"",sr:null,srOn:false,t0:0,timer:null,
          lines:[],interim:"",motion:[],prev:null,mTimer:null,recording:false,url:null};
 const QRE=/[?？]\s*$|(까요|나요|습니까|입니까|는지요|주세요|보세요|설명해|말해|말씀해|이유는|무엇인가|어떻게 생각)/;
@@ -755,23 +770,42 @@ const QRE=/[?？]\s*$|(까요|나요|습니까|입니까|는지요|주세요|보
 function goRecord(){
   const e=$("setup-err"); e.textContent="";
   const univ=$("s-univ").value.trim(), major=$("s-major").value.trim(), adm=$("s-adm").value.trim();
+  const admType=$("s-admtype").value;
   if(!univ||!major)  return e.textContent="대학과 학과를 입력해 주세요.";
+  if(!admType)       return e.textContent="전형 유형을 골라 주세요.";
   if(!PICKED.length) return e.textContent="지도교사를 한 명 이상 골라 주세요.";
-  SETUP={univ:univ,major:major,adm:adm,tids:PICKED.slice(),teachers:pickedNames(),
+  SETUP={univ:univ,major:major,adm:adm,admType:admType,tids:PICKED.slice(),teachers:pickedNames(),
          date:$("s-date").value||todayStr(),time:$("s-time").value||nowStr(),
          place:$("s-place").value.trim()||"본관 4층 컨설팅룸"};
   $("step-setup").hidden=true; $("step-record").hidden=false; $("step-result").hidden=true;
   $("rec-title").textContent=SETUP.univ+" "+SETUP.major+" 모의면접";
   startCamera(); window.scrollTo(0,0);
 }
+async function switchCam(){
+  if(M.recording) return toast("녹화 중에는 카메라를 바꿀 수 없습니다");
+  FACING=(FACING==="user")?"environment":"user";
+  if(M.stream){ M.stream.getTracks().forEach(function(t){t.stop()}); M.stream=null; }
+  $("veil").hidden=false; $("veil").textContent="카메라를 바꾸는 중입니다";
+  await startCamera();
+  toast(FACING==="user"?"앞 카메라(셀카)":"뒤 카메라");
+}
+async function showSwapIfMulti(){
+  try{
+    const ds=await navigator.mediaDevices.enumerateDevices();
+    const n=ds.filter(function(d){return d.kind==="videoinput"}).length;
+    $("camswap").hidden=(n<2);
+  }catch(e){ $("camswap").hidden=false; }
+}
 async function startCamera(){
   try{
     M.stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:"user",width:{ideal:640},height:{ideal:854}},
+      video:{facingMode:{ideal:FACING},width:{ideal:640},height:{ideal:854}},
       audio:{echoCancellation:true,noiseSuppression:true}});
     const v=$("preview"); v.srcObject=M.stream; v.muted=true; v.controls=false;
     try{await v.play()}catch(e){}
     $("veil").hidden=true; $("stage").classList.remove("done");
+    $("stage").classList.toggle("mirror",FACING==="user");
+    $("camswap").disabled=false; showSwapIfMulti();
     $("sr-note").textContent=hasSR()
       ? "질문과 답변이 자동으로 받아쓰입니다. 틀린 부분은 녹화가 끝난 뒤 고칠 수 있습니다."
       : "이 브라우저는 자동 받아쓰기를 지원하지 않습니다. 녹화가 끝나면 내용을 직접 적어 주세요. 안드로이드는 크롬으로 열면 자동으로 받아씁니다.";
@@ -799,6 +833,7 @@ function startRec(){
   M.recording=true; M.t0=Date.now();
   $("btn-rec").textContent="녹화 끝내기"; $("btn-rec").classList.add("danger");
   $("reclamp").hidden=false; $("stage").classList.add("rec");
+  $("camswap").disabled=true;
   M.timer=setInterval(tick,250);
   startMotion(); startSR();
   $("live").innerHTML='<span class="interim">듣고 있습니다…</span>';
@@ -810,6 +845,7 @@ function stopRec(){
   stopSR(); stopMotion();
   clearInterval(M.timer); M.timer=null;
   $("reclamp").hidden=true; $("stage").classList.remove("rec");
+  $("camswap").disabled=false;
   $("btn-rec").disabled=true; $("btn-rec").innerHTML='<i class="spin"></i> 정리하는 중…';
 }
 function tick(){
@@ -880,6 +916,7 @@ function resetStage(){
   if(M.url){ try{URL.revokeObjectURL(M.url)}catch(e){} M.url=null; }
   $("stage").classList.remove("done");
   $("veil").hidden=false; $("veil").textContent="카메라를 켜는 중입니다";
+  $("camswap").hidden=true; $("camswap").disabled=false;
   $("btn-rec").disabled=false; $("btn-rec").textContent="녹화 시작"; $("btn-rec").classList.remove("danger");
 }
 function cancelRecord(){
@@ -897,7 +934,8 @@ function onRecStop(){
     v.srcObject=null;
     if(M.url) URL.revokeObjectURL(M.url);
     M.url=URL.createObjectURL(blob);
-    v.src=M.url; v.muted=false; v.controls=true; $("stage").classList.add("done");
+    v.src=M.url; v.muted=false; v.controls=true;
+    $("stage").classList.add("done"); $("camswap").hidden=true;
   }catch(e){}
   DRAFT={dur:dur,blob:blob,mime:M.mime||"video/webm",
          transcript:M.lines.map(function(l){return l.s}).join("\n"),
@@ -906,6 +944,7 @@ function onRecStop(){
   $("btn-rec").disabled=false; $("btn-rec").textContent="녹화 시작"; $("btn-rec").classList.remove("danger");
   renderCheck();
 }
+function admLabel(s){ return [s.admType||"",s.adm||""].filter(Boolean).join(" · "); }
 function rateOf(d){ const min=(d.dur||0)/60000; return (min>0.2&&d.chars)?Math.round(d.chars/min):0; }
 function renderCheck(){
   const d=DRAFT;
@@ -966,7 +1005,7 @@ async function makeFeedback(){
 "아래는 한 학생의 모의면접을 마이크 하나로 녹음해 자동으로 받아쓴 글이다. 교사의 질문과 학생의 답변이 섞여 있다.\n"+
 "의문형·요청형 문장(…해 보세요, …인가요, …이유는)은 대체로 교사의 질문이고 나머지는 학생의 답변이다.\n"+
 "받아쓰기라 오탈자가 있으니 문맥으로 읽어라. 글에 없는 사실은 절대 지어내지 마라.\n\n"+
-"[면접 정보]\n학과·모집단위: "+S.major+" / 전형: "+(S.adm||"미기재")+"\n"+
+"[면접 정보]\n학과·모집단위: "+S.major+" / 전형: "+(admLabel(S)||"미기재")+"\n"+
 "녹화 시간: "+mmss(d.dur)+" / 말 속도: "+rateOf(d)+"자·분 / 자세 안정 지표: "+
 (d.stability!=null?d.stability+"점(100점 만점, 화면 움직임량 기반 참고치)":"측정 안 됨")+"\n\n"+
 "[받아쓴 면접 내용]\n"+d.transcript+"\n\n"+
@@ -1018,7 +1057,7 @@ async function saveSession(d,S,out){
   const qs=(out.teacher&&out.teacher.questions)||[];
   const data={
     id:id, sid:ME.sid, name:ME.name,
-    univ:S.univ, major:S.major, adm:S.adm, teachers:S.teachers,
+    univ:S.univ, major:S.major, adm:S.adm, admType:S.admType, teachers:S.teachers,
     date:S.date, time:S.time, place:S.place,
     durMs:d.dur, rate:rateOf(d), stability:d.stability, chars:d.chars,
     transcript:d.transcript, fb:out.student,
@@ -1081,7 +1120,7 @@ async function openSession(id){
   box.innerHTML='<div class="card">'+
     '<button class="btn ghost sm" type="button" onclick="App.renderStorage()">← 목록</button>'+
     '<h2 style="margin-top:12px">'+esc(s.univ)+" "+esc(s.major)+"</h2>"+
-    '<p class="lede">'+korDate(s.date,s.time)+(s.adm?" · "+esc(s.adm):"")+" · "+esc((s.teachers||[]).join(", "))+" 선생님</p>"+
+    '<p class="lede">'+korDate(s.date,s.time)+(admLabel(s)?" · "+esc(admLabel(s)):"")+" · "+esc((s.teachers||[]).join(", "))+" 선생님</p>"+
     '<div id="vbox"></div>'+
     '<div class="meters">'+
       '<div class="meter"><b>'+mmss(s.durMs)+"</b><span>녹화 시간</span></div>"+
@@ -1151,7 +1190,7 @@ async function tStudent(sid,name){
     html+='<div class="item" onclick="App.tSession(\''+s.id+'\')">'+
       '<span class="badge">'+(s.journal&&s.journal.edited?"수정함":"자동 작성")+"</span>"+
       '<div class="t">'+esc(s.univ)+" "+esc(s.major)+"</div>"+
-      '<div class="m">'+korDate(s.date,s.time)+(s.adm?" · "+esc(s.adm):"")+" · "+mmss(s.durMs)+"</div></div>";
+      '<div class="m">'+korDate(s.date,s.time)+(admLabel(s)?" · "+esc(admLabel(s)):"")+" · "+mmss(s.durMs)+"</div></div>";
   });
   $("pane-teacher").innerHTML=html; window.scrollTo(0,0);
 }
@@ -1193,7 +1232,7 @@ function journalHTML(s,editable){
     '<td class="c" colspan="2"'+I("j-stu")+ed+">"+esc(s.sid+" "+s.name)+"</td>"+
     '<td class="c" colspan="2"'+I("j-univ")+ed+">"+esc(s.univ)+"</td>"+
     '<td class="c" colspan="2"'+I("j-major")+ed+">"+esc(s.major)+"</td>"+
-    '<td class="c" colspan="2"'+I("j-adm")+ed+">"+esc(s.adm||"")+"</td>"+
+    '<td class="c" colspan="2"'+I("j-adm")+ed+">"+esc(admLabel(s))+"</td>"+
   "</tr><tr>"+
     '<th colspan="2">지도 일시</th>'+
     '<td class="c" colspan="3"'+I("j-when")+ed+">"+esc(j.when||korDate(s.date,s.time))+"</td>"+
@@ -1221,7 +1260,7 @@ function readEdited(){
 async function saveJournal(){
   if(!CUR) return;
   const e=readEdited(), s=CUR.data;
-  s.univ=e.univ||s.univ; s.major=e.major||s.major; s.adm=e.adm;
+  s.univ=e.univ||s.univ; s.major=e.major||s.major; s.adm=e.adm; s.admType="";
   if(e.t.length) s.teachers=e.t;
   s.journal=Object.assign({},s.journal,{when:e.when,place:e.place,guidance:e.guidance,
     opinion:e.opinion,edited:true,editedBy:ME.name,editedAt:Date.now()});
@@ -1236,7 +1275,7 @@ async function regen(){
   toast("다시 만드는 중…");
   const prompt="너는 고등학교 3학년 대입 모의면접을 지도하는 진학 담당 교사다.\n"+
    "아래 모의면접 기록을 읽고, 교사가 한 질문 4~5개와 지도 결과 의견을 뽑아라. 글에 없는 사실은 지어내지 마라.\n\n"+
-   "학과·모집단위: "+s.major+" "+(s.adm||"")+"\n\n"+s.transcript+"\n\n"+
+   "학과·모집단위: "+s.major+" "+admLabel(s)+"\n\n"+s.transcript+"\n\n"+
    '다른 말 없이 JSON만 출력하라: {"questions":[{"category":"기본 소양 또는 전공 심화 또는 학생부 확인 또는 상황 제시","question":"…","note":"학생 답변 요지 한 줄"}],"opinion":"공식 일지 문어체(~함, ~필요함) 4~6문장"}';
   try{
     const out=await aiJSON(prompt);
@@ -1397,7 +1436,7 @@ window.addEventListener("beforeunload",function(){ if(M.recording) stopMedia(); 
 const App={
   authTab:authTab, loginStudent:loginStudent, loginTeacher:loginTeacher, logout:logout,
   showReset:showReset, hideReset:hideReset, showWipe:showWipe, doReset:doReset, doWipe:doWipe,
-  stTab:stTab, goRecord:goRecord, toggleRec:toggleRec, cancelRecord:cancelRecord,
+  stTab:stTab, goRecord:goRecord, toggleRec:toggleRec, cancelRecord:cancelRecord, switchCam:switchCam,
   makeFeedback:makeFeedback, discardDraft:discardDraft, newPractice:newPractice,
   renderStorage:renderStorage, openSession:openSession, delSession:delSession, saveVideo:saveVideo,
   printReport:printReport, printJournal:printJournal, printAllJournals:printAllJournals,
