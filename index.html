@@ -189,7 +189,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v4.0</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v4.1</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -346,7 +346,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </main>
 
 <div class="foot">
-  <b>버전 4.0</b> · 2026-09-15<br>
+  <b>버전 4.1</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -1896,7 +1896,40 @@ async function reissue(){
 }
 
 /* ======================= 인쇄 ======================= */
-function doPrint(html){ $("printRoot").innerHTML=html; setTimeout(function(){window.print()},150); }
+function doPrint(html){
+  $("printRoot").innerHTML=html;
+  const go=function(){ setTimeout(function(){window.print()},150); };
+  let seen=false;
+  try{ seen=localStorage.getItem(LSK+"printtip")==="1"; }catch(e){}
+  if(seen) return go();
+  printTip(go);
+}
+function printTip(go){
+  const m=document.createElement("div");
+  m.style.cssText="position:fixed;inset:0;background:rgba(11,36,64,.6);z-index:130;display:flex;align-items:center;justify-content:center;padding:18px";
+  m.innerHTML='<div style="background:#fff;color:#16222E;border-radius:12px;max-width:460px;width:100%;padding:20px;line-height:1.65">'+
+    "<h3 style='margin:0 0 8px;font-size:18px'>인쇄 창에서 두 가지만 맞춰 주세요</h3>"+
+    "<p style='font-size:13.5px;color:#5D6D7E;margin:0 0 10px'>브라우저 설정이라 앱에서 대신 바꿔 드릴 수 없습니다. 한 번만 맞추면 다음부터는 그대로 유지됩니다.</p>"+
+    "<div style='background:#F3F6FA;border:1px solid #D2DBE5;border-radius:8px;padding:12px 14px;font-size:14px'>"+
+      "<p style='margin:0 0 7px'><b>설정 더보기</b>를 펼친 뒤</p>"+
+      "<p style='margin:0 0 5px'>· <b>머리글 및 바닥글</b> → <b style='color:#B23A2F'>체크 해제</b><br>"+
+      "<span style='color:#5D6D7E;font-size:12.5px;padding-left:11px'>날짜·주소가 찍혀 두 장으로 넘어가는 것을 막습니다</span></p>"+
+      "<p style='margin:0'>· <b>배경 그래픽</b> → <b style='color:#1F6F52'>체크</b><br>"+
+      "<span style='color:#5D6D7E;font-size:12.5px;padding-left:11px'>표의 파란 머리와 학교 교표가 인쇄됩니다</span></p>"+
+    "</div>"+
+    "<label style='display:flex;align-items:center;gap:8px;margin:13px 0;font-size:13.5px;cursor:pointer'>"+
+      "<input type='checkbox' id='pt-hide' style='width:17px;height:17px;accent-color:#0B2440'> 다시 보지 않기</label>"+
+    "<div style='display:flex;gap:8px'>"+
+      "<button id='pt-go' style='flex:2;padding:12px;border-radius:8px;border:1px solid #0B2440;background:#0B2440;color:#fff;font-size:15px'>인쇄 창 열기</button>"+
+      "<button id='pt-no' style='flex:1;padding:12px;border-radius:8px;border:1px solid #9FB0C2;background:#fff;font-size:15px'>취소</button>"+
+    "</div></div>";
+  document.body.appendChild(m);
+  m.querySelector("#pt-go").onclick=function(){
+    if(m.querySelector("#pt-hide").checked){ try{localStorage.setItem(LSK+"printtip","1")}catch(e){} }
+    m.remove(); go();
+  };
+  m.querySelector("#pt-no").onclick=function(){ m.remove(); };
+}
 async function printJournal(id){
   const e=(CUR&&CUR.data.id===id)?CUR:await findEntry(id); if(!e) return;
   const s=JSON.parse(JSON.stringify(e.data));
