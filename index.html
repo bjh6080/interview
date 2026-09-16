@@ -132,6 +132,25 @@ table.grid th,table.grid td{border:1px solid var(--rule);padding:8px 9px;text-al
 table.grid th{background:var(--mist);font-weight:500;color:var(--navy-700)}
 .scrollx{overflow-x:auto}
 
+.journal{font-family:var(--serif);background:#fff;color:#111;padding:14px}
+.journal *{color:#111}
+table.jhead{width:100%;border-collapse:collapse;margin-bottom:10px;table-layout:fixed}
+table.jhead td{border:1.5px solid #111;vertical-align:middle;padding:10px}
+td.jlogo{width:96px;text-align:center;border-right:1.5px solid #111}
+td.jlogo img{width:68px;height:auto;display:inline-block}
+td.jname{text-align:center;font-weight:700;letter-spacing:.16em;white-space:nowrap;font-size:clamp(13px,3.4vw,21px)}
+table.jt{width:100%;border-collapse:collapse;table-layout:fixed}
+table.jt th,table.jt td{border:1px solid #111;padding:7px 8px;font-size:13px;vertical-align:middle}
+table.jt td.body,table.jt td.body2{vertical-align:top}
+table.jt th{background:#DCE4F2;text-align:center;font-weight:700}
+table.jt td.c{text-align:center}
+table.jt td.stu{white-space:nowrap}
+table.jt td.sg i{font-style:normal;color:#444;font-size:12px}
+table.jt td.body{height:190px;font-size:13.5px;line-height:1.85;white-space:pre-wrap}
+table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre-wrap}
+.jt-edit td.body,.jt-edit td.body2{background:#FCFCFE}
+[contenteditable]{outline:0}
+[contenteditable]:focus{background:#FFFDF0}
 .jpick{display:flex;align-items:center;gap:9px;font-size:14px;margin-bottom:12px;color:var(--navy-700);cursor:pointer}
 .jpick input{width:18px;height:18px;accent-color:var(--navy-900);flex:0 0 auto}
 @media print{
@@ -145,8 +164,8 @@ table.grid th{background:var(--mist);font-weight:500;color:var(--navy-700)}
   /* 합계 273mm — A4(297) 여백 10mm×2 안에 들어갑니다 */
   table.jhead{margin:0 0 2mm}
   table.jhead td{padding:4px 10px;height:18mm}
-  td.jlogo{width:84px}
-  td.jlogo img{width:56px}
+  td.jlogo{width:76px}
+  td.jlogo img{width:50px}
   td.jname{font-size:21px!important;letter-spacing:.2em}
   table.jt th,table.jt td{padding:4px 9px;font-size:13.5px;vertical-align:middle}
   table.jt tr.hd th{height:9mm}
@@ -170,7 +189,7 @@ table.grid th{background:var(--mist);font-weight:500;color:var(--navy-700)}
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v3.9</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v4.0</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -327,7 +346,7 @@ table.grid th{background:var(--mist);font-weight:500;color:var(--navy-700)}
 </main>
 
 <div class="foot">
-  <b>버전 3.9</b> · 2026-09-15<br>
+  <b>버전 4.0</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
