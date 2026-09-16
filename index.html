@@ -134,44 +134,28 @@ table.grid th{background:var(--mist);font-weight:500;color:var(--navy-700)}
 
 .jpick{display:flex;align-items:center;gap:9px;font-size:14px;margin-bottom:12px;color:var(--navy-700);cursor:pointer}
 .jpick input{width:18px;height:18px;accent-color:var(--navy-900);flex:0 0 auto}
-@media print{.jpick{display:none!important}}
-.journal{font-family:var(--serif);background:#fff;color:#111;padding:14px}
-.journal *{color:#111}
-table.jhead{width:100%;border-collapse:collapse;margin-bottom:10px;table-layout:fixed}
-table.jhead td{border:1.5px solid #111;vertical-align:middle;padding:10px}
-td.jlogo{width:96px;text-align:center;border-right:1.5px solid #111}
-td.jlogo img{width:68px;height:auto;display:inline-block;image-rendering:auto}
-td.jname{text-align:center;font-weight:700;letter-spacing:.16em;white-space:nowrap;font-size:clamp(13px,3.4vw,21px)}
-table.jt td.stu{line-height:1.7}
-table.jt td.sg i{font-style:normal;color:#444;font-size:12px}
-table.jt{width:100%;border-collapse:collapse;table-layout:fixed}
-table.jt th,table.jt td{border:1px solid #111;padding:7px 8px;font-size:13px;vertical-align:top}
-table.jt th{background:#DCE4F2;text-align:center;font-weight:700}
-table.jt td.c{text-align:center}
-table.jt td.body{height:190px;font-size:13.5px;line-height:1.85;white-space:pre-wrap}
-table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre-wrap}
-.jt-edit td.body,.jt-edit td.body2{background:#FCFCFE}
-[contenteditable]{outline:0}
-[contenteditable]:focus{background:#FFFDF0}
-
-#printRoot{display:none}
 @media print{
-  @page{size:A4;margin:12mm}
-  html,body{background:#fff}
+  @page{size:A4;margin:10mm}
+  html,body{background:#fff;margin:0;padding:0}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
-  .topbar,.wrap,#app,.foot,#inapp{display:none!important}
-  #printRoot{display:block!important}
-  .journal{padding:0;page-break-inside:avoid}
-  table.jhead{margin-bottom:8px}
-  table.jhead td{padding:11px 10px}
-  td.jlogo{width:88px}
-  td.jlogo img{width:62px}
+  .topbar,.wrap,#app,.foot,#inapp,.jpick{display:none!important}
+  #printRoot{display:block!important;overflow:hidden}
+  #printRoot>*:last-child{page-break-after:auto!important}
+  .journal{padding:0;margin:0;page-break-inside:avoid}
+  /* 합계 273mm — A4(297) 여백 10mm×2 안에 들어갑니다 */
+  table.jhead{margin:0 0 2mm}
+  table.jhead td{padding:4px 10px;height:18mm}
+  td.jlogo{width:84px}
+  td.jlogo img{width:56px}
   td.jname{font-size:21px!important;letter-spacing:.2em}
-  table.jt th,table.jt td{padding:8px 9px;font-size:13.5px}
-  table.jt tr.srow td{height:12mm}
-  table.jt td.body{height:94mm}
-  table.jt td.body2{height:66mm}
-  table.jt td.body,table.jt td.body2{vertical-align:top}
+  table.jt th,table.jt td{padding:4px 9px;font-size:13.5px;vertical-align:middle}
+  table.jt tr.hd th{height:9mm}
+  table.jt tr.srow td{height:11mm}
+  table.jt tr.rw th,table.jt tr.rw td{height:10mm}
+  table.jt tr.bn th{height:9mm}
+  table.jt td.body{height:100mm}
+  table.jt td.body2{height:73mm}
+  table.jt td.body,table.jt td.body2{vertical-align:top;padding:7px 9px}
   .pagebreak{break-after:page;page-break-after:always}
   .report{font-family:var(--sans);color:#111}
   .report h1{font-size:19px;margin:0 0 2px}
@@ -186,7 +170,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v3.7</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v3.9</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -343,7 +327,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </main>
 
 <div class="foot">
-  <b>버전 3.7</b> · 2026-09-15<br>
+  <b>버전 3.9</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -1789,30 +1773,30 @@ function journalHTML(s,editable,pfx){
   '<table class="jt"><colgroup>'+
     '<col style="width:12.5%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:12.5%">'+
     '<col style="width:12.5%"><col style="width:12.5%"><col style="width:12.5%"><col style="width:12.5%"></colgroup>'+
-  "<tr><th colspan=\"2\">학생(학번·이름)</th><th colspan=\"2\">대학</th><th colspan=\"2\">학과</th><th colspan=\"2\">전형</th></tr>"+
+  '<tr class="hd">'+"<th colspan=\"2\">학생(학번·이름)</th><th colspan=\"2\">대학</th><th colspan=\"2\">학과</th><th colspan=\"2\">전형</th></tr>"+
   '<tr class="srow">'+
-    '<td class="c stu" colspan="2"'+I("j-stu")+ed+">"+esc(s.sid)+"<br>"+esc(s.name)+"</td>"+
+    '<td class="c stu" colspan="2"'+I("j-stu")+ed+">"+esc(s.sid)+" "+esc(s.name)+"</td>"+
     '<td class="c" colspan="2"'+I("j-univ")+ed+">"+esc(s.univ)+"</td>"+
     '<td class="c" colspan="2"'+I("j-major")+ed+">"+esc(s.major)+"</td>"+
     '<td class="c" colspan="2"'+I("j-adm")+ed+">"+esc(admLabel(s))+"</td>"+
   "</tr>"+
   '<tr class="srow">'+blank+blank+blank+blank+"</tr>"+
   '<tr class="srow">'+blank+blank+blank+blank+"</tr>"+
-  "<tr>"+
+  '<tr class="rw">'+
     '<th colspan="2">지도 일시</th>'+
     '<td class="c" colspan="3"'+I("j-when")+ed+">"+esc(j.when||korDate(s.date,s.time))+"</td>"+
     "<th>장소</th>"+
     '<td class="c" colspan="2"'+I("j-place")+ed+">"+esc(j.place||s.place||"")+"</td>"+
-  "</tr><tr>"+
+  '</tr><tr class="rw">'+
     '<th colspan="2">지도교사</th>'+
     '<td class="c sg" colspan="2"'+I("j-t0")+ed+">"+sign(tea[0])+"</td>"+
     '<td class="c sg" colspan="2"'+I("j-t1")+ed+">"+sign(tea[1])+"</td>"+
     '<td class="c sg" colspan="2"'+I("j-t2")+ed+">"+sign(tea[2])+"</td>"+
-  "</tr><tr>"+
+  '</tr><tr class="bn">'+
     '<th colspan="8" style="font-weight:500">지도 내용(지원대학과 전형에 따라 면접관이 자유롭게 서술)</th>'+
   "</tr><tr>"+
     '<td class="body" colspan="8" style="'+gStyle+'"'+I("j-guide")+ed+">"+esc(j.guidance||"")+"</td>"+
-  "</tr><tr><th colspan=\"8\">지도 결과 및 의견</th></tr><tr>"+
+  '</tr><tr class="bn">'+"<th colspan=\"8\">지도 결과 및 의견</th></tr><tr>"+
     '<td class="body2" colspan="8" style="'+oStyle+'"'+I("j-op")+ed+">"+esc(j.opinion||"")+"</td>"+
   "</tr></table></div>";
 }
