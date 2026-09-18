@@ -202,7 +202,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v4.4</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v4.5</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -303,7 +303,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
       </div>
       <div class="row" style="margin-top:14px">
         <label class="f"><span>지도 일시</span><input type="date" id="s-date"></label>
-        <label class="f"><span>시작 시각</span><input type="time" id="s-time"></label>
+        <label class="f"><span>시작 시각</span><input type="time" id="s-time" step="300"></label>
       </div>
       <label class="f"><span>장소</span><input type="text" id="s-place" placeholder="본관 4층 컨설팅룸"></label>
       <p class="err" id="setup-err"></p>
@@ -375,7 +375,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </div>
 
 <div class="foot">
-  <b>버전 4.4</b> · 2026-09-15<br>
+  <b>버전 4.5</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -391,7 +391,7 @@ const esc= (s)=>String(s==null?"":s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&l
 const pad= (n)=>String(n).padStart(2,"0");
 const mmss=(ms)=>{const s=Math.floor((ms||0)/1000);return Math.floor(s/60)+":"+pad(s%60);};
 const todayStr=()=>{const d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());};
-const nowStr  =()=>{const d=new Date();return pad(d.getHours())+":"+pad(d.getMinutes());};
+const nowStr  =()=>{const d=new Date();return pad(d.getHours())+":"+pad(Math.floor(d.getMinutes()/5)*5);};
 const DOW=["일","월","화","수","목","금","토"];
 function korDate(iso,time){
   if(!iso) return "";
