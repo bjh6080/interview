@@ -205,7 +205,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v4.9</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v5.1</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -383,7 +383,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </div>
 
 <div class="foot">
-  <b>버전 4.9</b> · 2026-09-15<br>
+  <b>버전 5.1</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -425,6 +425,24 @@ function timeVal(){
   let h=Number(hh.value)%12;
   if(ap.value==="1") h+=12;
   return pad(h)+":"+mm.value;
+}
+
+function korDate(iso,time){
+  if(!iso) return "";
+  const p=String(iso).split("-").map(Number);
+  if(p.length<3||isNaN(p[0])) return String(iso);
+  const dt=new Date(p[0],p[1]-1,p[2]);
+  return p[0]+". "+p[1]+". "+p[2]+".("+DOW[dt.getDay()]+")"+(time?" "+time:"");
+}
+function toast(msg){
+  const n=el("div",null,msg);
+  n.style.cssText="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#0B2440;color:#fff;padding:11px 18px;border-radius:999px;font-size:14px;z-index:99;max-width:88vw;text-align:center;box-shadow:0 6px 22px rgba(0,0,0,.25)";
+  document.body.appendChild(n); setTimeout(function(){n.remove()},2800);
+}
+function busy(btn,on,label){
+  if(!btn) return;
+  if(on){ btn.dataset.lbl=btn.textContent; btn.disabled=true; btn.innerHTML='<i class="spin"></i> '+(label||"잠시만요…"); }
+  else{ btn.disabled=false; btn.textContent=btn.dataset.lbl||label||"확인"; }
 }
 
 /* ======================= 암호 도구 ======================= */
@@ -949,6 +967,26 @@ function setPractice(m){
     if(go) go.textContent="카메라 켜기";
   }
 }
+function srStatus(t){ const n=$("sr-note"); if(n) n.textContent="받아쓰기 상태 — "+t; }
+async function ensureMic(){
+  try{
+    const st=await navigator.mediaDevices.getUserMedia({audio:true});
+    st.getTracks().forEach(function(t){t.stop()});
+    srStatus("마이크 준비됨");
+    return true;
+  }catch(e){
+    srStatus("마이크를 쓸 수 없습니다 ("+(e&&e.name)+"). 주소창 왼쪽 아이콘 → 권한 → 마이크를 허용해 주세요.");
+    return false;
+  }
+}
+function isMobileDev(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||""); }
+function needAudio(){ return !(REC_MODE==="stt" && isMobileDev()); }
+async function restartCamera(){
+  if(M.stream){ M.stream.getTracks().forEach(function(t){t.stop()}); M.stream=null; }
+  $("veil").hidden=false; $("veil").textContent="카메라를 다시 켜는 중입니다";
+  await startCamera();
+}
+
 function setMode(m,quiet){
   if(M.recording) return toast("녹화 중에는 바꿀 수 없습니다");
   if(m==="stt"&&!hasSR()) return toast("이 브라우저는 자동 받아쓰기를 지원하지 않습니다");
@@ -999,7 +1037,7 @@ function goRecord(){
   const withT=(PRACTICE==="with"||PRACTICE==="text");
   $("cam-area").hidden=withT; $("mode-area").hidden=withT;
   $("live").hidden=false;
-  if(withT){ REC_MODE="stt"; $("rec-sub")&&0; startMicOnly(); }
+  if(withT){ REC_MODE="stt"; startMicOnly(); }
   else startCamera();
   window.scrollTo(0,0);
 }
