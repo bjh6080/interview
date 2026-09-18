@@ -145,7 +145,9 @@ table.jt td.body,table.jt td.body2{vertical-align:top}
 table.jt th{background:#DCE4F2;text-align:center;font-weight:700}
 table.jt td.c{text-align:center}
 table.jt td.stu{white-space:nowrap}
-table.jt td.sg i{font-style:normal;color:#444;font-size:12px}
+table.jt td.sg{padding-left:10px;padding-right:10px}
+table.jt td.sg .nm{display:inline-block}
+table.jt td.sg i{float:right;font-style:normal;color:#444;font-size:12px;margin-right:2px}
 table.jt td.body{height:190px;font-size:13.5px;line-height:1.85;white-space:pre-wrap}
 table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre-wrap}
 .jt-edit td.body,.jt-edit td.body2{background:#FCFCFE}
@@ -168,6 +170,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
   td.jlogo img{width:50px}
   td.jname{font-size:21px!important;letter-spacing:.2em}
   table.jt th,table.jt td{padding:4px 9px;font-size:13.5px;vertical-align:middle}
+  table.jt td.sg i{margin-right:3px}
   table.jt tr.hd th{height:9mm}
   table.jt tr.srow td{height:11mm}
   table.jt tr.rw th,table.jt tr.rw td{height:10mm}
@@ -202,7 +205,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v4.5</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v4.8</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -303,7 +306,11 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
       </div>
       <div class="row" style="margin-top:14px">
         <label class="f"><span>지도 일시</span><input type="date" id="s-date"></label>
-        <label class="f"><span>시작 시각</span><input type="time" id="s-time" step="300"></label>
+        <label class="f"><span>시작 시각</span>
+          <span style="display:flex;gap:6px">
+            <select id="s-hh" style="flex:1" aria-label="시"></select>
+            <select id="s-mm" style="flex:1" aria-label="분"></select>
+          </span></label>
       </div>
       <label class="f"><span>장소</span><input type="text" id="s-place" placeholder="본관 4층 컨설팅룸"></label>
       <p class="err" id="setup-err"></p>
@@ -375,7 +382,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </div>
 
 <div class="foot">
-  <b>버전 4.5</b> · 2026-09-15<br>
+  <b>버전 4.8</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -393,6 +400,29 @@ const mmss=(ms)=>{const s=Math.floor((ms||0)/1000);return Math.floor(s/60)+":"+p
 const todayStr=()=>{const d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());};
 const nowStr  =()=>{const d=new Date();return pad(d.getHours())+":"+pad(Math.floor(d.getMinutes()/5)*5);};
 const DOW=["일","월","화","수","목","금","토"];
+function fillTimeSelects(){
+  const hh=$("s-hh"), mm=$("s-mm");
+  if(!hh||!mm||hh.options.length) return;
+  let a="";
+  for(let h=0;h<24;h++){
+    const ap=h<12?"오전":"오후", h12=(h%12)||12;
+    a+='<option value="'+pad(h)+'">'+ap+" "+h12+"시</option>";
+  }
+  hh.innerHTML=a;
+  let b="";
+  for(let m=0;m<60;m+=5) b+='<option value="'+pad(m)+'">'+pad(m)+"분</option>";
+  mm.innerHTML=b;
+}
+function setTimeNow(){
+  fillTimeSelects();
+  const d=new Date();
+  if($("s-hh")) $("s-hh").value=pad(d.getHours());
+  if($("s-mm")) $("s-mm").value=pad(Math.floor(d.getMinutes()/5)*5);
+}
+function timeVal(){
+  const h=$("s-hh"), m=$("s-mm");
+  return (h&&m&&h.value&&m.value)?(h.value+":"+m.value):nowStr();
+}
 function korDate(iso,time){
   if(!iso) return "";
   const p=String(iso).split("-").map(Number);
@@ -473,7 +503,7 @@ const normCode=(s)=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 const normName=(s)=>String(s||"").trim().replace(/\s+/g,"");
 
 /* ======================= 명렬표 ======================= */
-const ROSTER=["0000bc4ac174c85a","00547ca3cdce1ffc","07913c5d2a2a627b","0ac27489907fdbd8","0b72562ef3000e1f","108d6766912ce78e","11154dcc0c4ec0ac","12570ec50476ed0c","1359676d10aefe7c","13ea011dc292f122","14e82a7b7b58cc34","17bccc6b2793f8ea","1886a71839e397dd","1900d1eee15ca734","19516f66eacf8962","19c874accaca001e","1ae247b9c1758d50","1c1a66d85f13bb52","1c9c18587ada6608","1dc43b78e48fc3a8","1def8a31fd51c4ce","1ea836fb6087243e","1f1664721f47f513","1f6647ef15f44a48","1f9e2a56e5d37372","201ac3a13c45847a","20d6b22eb325641f","24153980d4786491","2546b26da2d1a7a8","28e704289d7b0632","2b3cbc1ed570c473","2c7df2b5974b297c","2c86dd52206eeaef","2da8fadea0b5d880","303b40c8b473d78d","30815c3446025c50","313d44ce801ccc45","32785e97b17ae916","33b6f62810ea76ab","348d053638370076","352867257ba6241f","385213a6e820a771","388a4a7d20c18e57","38f634289055c2ff","3937429e5fec149e","3d57a341602ec8e6","3dd364b3ffecee6a","3e20b0d8ef2b056d","3e4a49505506a9cc","3eed6a74ec66f24b","3fd654abddab17b0","3ffb73496a70ca49","4029f900aa20f5d8","418cde0836e66c24","41ac934729412299","437faa4b26f4753f","44e7c9d273300541","44f442ba2b3597e2","45b80606021e36aa","47dad273c35eb78a","480b69e21bc75faf","49f98d58ef472d1d","4b5f0f8399b86fed","4c7303b8c3251cd7","4d9d6583eeb0df52","4de453eea04c7f0a","500e254a4c9848a0","52274a1a3fd37899","5285b098291c58ad","53104b27b0b32b72","535b0143b3ba6680","53c24c2b6478e9c2","54093645c56c60cc","548816470f972195","553dbe21e6c03236","5675659888ac499c","5df0aae795ca3bf8","5fb4cf0f156092a6","6195effef923c204","663f39671e49d032","66a2fb9ca9aacdbb","683e8867dbfc600c","6922643c0e9a287e","6a338179806da43b","6e517bcb2fae54c9","716d7694a30c4576","71b532e1be456558","74cb38e8d4efb6fe","75ba96c902d447d1","76fb5ae070113a82","78f2cdf9063b00f6","7907b045062c49c7","7c376bda953c5980","7c8653ec8ecdc0a7","7e77623c9ed7502d","7f32cb0930413524","80987386fd959bef","8382cc554a58e673","83eaecb1ffa37221","84be909d8cba0f3b","850f0b950a65265b","881fab56d04743c0","8b5c0619879f103b","8c3ce23d026168f6","8e03893ede62a5c7","8f918b673f7f4860","9028f5f04f2a1caf","906489c5c710b390","91522d7933acc75f","9212cc6e426b06ce","92b77f5d5c632417","9398d7f5239a8db2","944fb6cbf56fcf01","9467573067e3436d","9468457d4e725e6e","977695d11b3490d8","9b23887b6b6f09d5","9e93cfe108c286ea","a11402b1afc3bca4","a13b744be7841520","a1cd62a06a70af25","a23edd0b803b5c02","a3797ef12a627f88","a40cd41a0b9264e0","a4f0d042aefa27ab","a625ad31247abf70","a6cd4d7d13688318","a9c21d62eef0a74a","ad8d8e6373b84347","addbbc410f2eedd2","afaa5dfcffde357b","aff26cd9b8dcb95d","b13847f55fe10c68","b198af6dd2de7f19","b244c778a024afe2","b3a2d49f02089f83","b4544c4b08be6ba0","b80e9b49be17bc8c","b8354d0cf0f80d84","ba2f544d65b5de71","ba80f32b12c36b4b","bd71a62c6f0bbf84","bd7cc80d4ab9ce4a","bdbd75aef6a33560","bde6bf5e87ae0bd4","bf0a59493c036832","bff824ae1c328199","c20f72c2a2111e39","c26edd03980cd37b","c30f8fce04bc21af","c384480e0063ad63","c387989807566e3a","c8fb40bab2dede9f","c980e890d61ce6d6","cad1ceb750c51f30","ccbd4ee0b760f3f8","ccfb4d45e8bcaf5a","cdf16237dc509b15","cedda382870399eb","d0b903477849dbfd","d0fe1af0df57ba15","d2c2b30097348b24","d46056da891eb897","d53494a70e70dff4","d652eecfdc7d3643","da69084a3e33e6fb","ddc9d22385b99685","e402a261fd733d5f","e50312c7db5b1eb7","e53ccd9ffe04f033","e54760a1c9e719d4","e5f3c6ae6b87c9fb","e63d4ab6be421750","e6b93cc64b91ee51","ebcfb45b73372c82","ebdf500ec94dfc02","ed5d2e0d29f420ea","f1d247d0820e8055","f46ba5ac4a94d7b5","f48128fdcccc2e93","f4a31a5efce91d69","f97f3d60b2d735c0","f99255e11b84f004","fb5190f731919b4a","fb53e50954f1e202","fb9f690b95c2de3f","fd5a2cbb9e5cb55b","febca54846090609","ff39a300a61b4515"];
+const ROSTER=["0000bc4ac174c85a","00547ca3cdce1ffc","07913c5d2a2a627b","0ac27489907fdbd8","0b72562ef3000e1f","108d6766912ce78e","11154dcc0c4ec0ac","12570ec50476ed0c","1359676d10aefe7c","13ea011dc292f122","14e82a7b7b58cc34","17bccc6b2793f8ea","1886a71839e397dd","1900d1eee15ca734","19516f66eacf8962","19c874accaca001e","1ae247b9c1758d50","1c1a66d85f13bb52","1c9c18587ada6608","1dc43b78e48fc3a8","1def8a31fd51c4ce","1ea836fb6087243e","1f1664721f47f513","1f6647ef15f44a48","1f9e2a56e5d37372","201ac3a13c45847a","20d6b22eb325641f","24153980d4786491","2546b26da2d1a7a8","28e704289d7b0632","2b3cbc1ed570c473","2c7df2b5974b297c","2c86dd52206eeaef","2da8fadea0b5d880","303b40c8b473d78d","30815c3446025c50","313d44ce801ccc45","32785e97b17ae916","33b6f62810ea76ab","348d053638370076","352867257ba6241f","385213a6e820a771","388a4a7d20c18e57","38f634289055c2ff","3937429e5fec149e","3d57a341602ec8e6","3dd364b3ffecee6a","3e20b0d8ef2b056d","3e4a49505506a9cc","3eed6a74ec66f24b","3fd654abddab17b0","3ffb73496a70ca49","4029f900aa20f5d8","418cde0836e66c24","41ac934729412299","437faa4b26f4753f","44e7c9d273300541","44f442ba2b3597e2","45b80606021e36aa","47dad273c35eb78a","480b69e21bc75faf","49f98d58ef472d1d","4b5f0f8399b86fed","4c7303b8c3251cd7","4d9d6583eeb0df52","4de453eea04c7f0a","500e254a4c9848a0","52274a1a3fd37899","5285b098291c58ad","53104b27b0b32b72","535b0143b3ba6680","53c24c2b6478e9c2","54093645c56c60cc","548816470f972195","553dbe21e6c03236","5675659888ac499c","5df0aae795ca3bf8","5fb4cf0f156092a6","6195effef923c204","663f39671e49d032","66a2fb9ca9aacdbb","683e8867dbfc600c","6922643c0e9a287e","6a338179806da43b","6e517bcb2fae54c9","716d7694a30c4576","71b532e1be456558","74cb38e8d4efb6fe","75ba96c902d447d1","76fb5ae070113a82","78f2cdf9063b00f6","7907b045062c49c7","7c376bda953c5980","7c8653ec8ecdc0a7","7e77623c9ed7502d","7f32cb0930413524","80987386fd959bef","8382cc554a58e673","83eaecb1ffa37221","84be909d8cba0f3b","850f0b950a65265b","881fab56d04743c0","8b5c0619879f103b","8c3ce23d026168f6","8e03893ede62a5c7","8f918b673f7f4860","9028f5f04f2a1caf","906489c5c710b390","91522d7933acc75f","9212cc6e426b06ce","92b77f5d5c632417","9398d7f5239a8db2","944fb6cbf56fcf01","9467573067e3436d","9468457d4e725e6e","977695d11b3490d8","9b23887b6b6f09d5","9e93cfe108c286ea","a11402b1afc3bca4","a13b744be7841520","a1cd62a06a70af25","a23edd0b803b5c02","a3797ef12a627f88","a40cd41a0b9264e0","a4f0d042aefa27ab","a625ad31247abf70","a6cd4d7d13688318","a9c21d62eef0a74a","ad8d8e6373b84347","addbbc410f2eedd2","afaa5dfcffde357b","aff26cd9b8dcb95d","b13847f55fe10c68","b198af6dd2de7f19","b244c778a024afe2","b3a2d49f02089f83","b4544c4b08be6ba0","b80e9b49be17bc8c","b8354d0cf0f80d84","ba2f544d65b5de71","ba80f32b12c36b4b","bd71a62c6f0bbf84","bd7cc80d4ab9ce4a","bdbd75aef6a33560","bde6bf5e87ae0bd4","bf0a59493c036832","bff824ae1c328199","c20f72c2a2111e39","c26edd03980cd37b","c30f8fce04bc21af","c384480e0063ad63","c387989807566e3a","c8fb40bab2dede9f","c980e890d61ce6d6","cad1ceb750c51f30","ccbd4ee0b760f3f8","ccfb4d45e8bcaf5a","cdf16237dc509b15","cedda382870399eb","d0b903477849dbfd","d0fe1af0df57ba15","d2c2b30097348b24","d46056da891eb897","d53494a70e70dff4","d652eecfdc7d3643","da69084a3e33e6fb","ddc9d22385b99685","e402a261fd733d5f",+"e50312c7db5b1eb7","e53ccd9ffe04f033","e54760a1c9e719d4","e5f3c6ae6b87c9fb","e63d4ab6be421750","e6b93cc64b91ee51","ebcfb45b73372c82","ebdf500ec94dfc02","ed5d2e0d29f420ea","f1d247d0820e8055","f46ba5ac4a94d7b5","f48128fdcccc2e93","f4a31a5efce91d69","f97f3d60b2d735c0","f99255e11b84f004","fb5190f731919b4a","fb53e50954f1e202","fb9f690b95c2de3f","fd5a2cbb9e5cb55b","febca54846090609","ff39a300a61b4515"];
 async function inRoster(sid,name){
   const h=await pbkHex(sid+"|"+normName(name),SALT_ROSTER,8);
   return ROSTER.indexOf(h)>=0;
@@ -879,7 +909,7 @@ async function findEntry(id){
 async function enterStudent(){
   $("view-auth").hidden=true; $("view-teacher").hidden=true; $("view-student").hidden=false;
   topbarWho(); stTab("practice");
-  $("s-date").value=todayStr(); $("s-time").value=nowStr();
+  $("s-date").value=todayStr(); setTimeNow();
   try{ await loadDir(); }catch(e){}
   drawChips(); setPractice("with");
   window.scrollTo(0,0);
@@ -976,7 +1006,7 @@ function goRecord(){
   if(PRACTICE==="with"&&!PICKED.length) return e.textContent="지도교사를 한 명 이상 골라 주세요.";
   SETUP={univ:univ,major:major,adm:adm,admType:admType,practice:PRACTICE,
          tids:(PRACTICE==="with"?PICKED.slice():[]),teachers:(PRACTICE==="with"?pickedNames():[]),
-         date:$("s-date").value||todayStr(),time:$("s-time").value||nowStr(),
+         date:$("s-date").value||todayStr(),time:timeVal(),
          place:$("s-place").value.trim()||"본관 4층 컨설팅룸"};
   $("step-setup").hidden=true; $("step-record").hidden=false; $("step-result").hidden=true;
   $("rec-title").textContent=SETUP.univ+" "+SETUP.major+" 모의면접";
@@ -1462,7 +1492,7 @@ function discardDraft(){
 function newPractice(){
   DRAFT=null; resetStage();
   $("step-result").hidden=true; $("step-record").hidden=true; $("step-setup").hidden=false;
-  $("s-date").value=todayStr(); $("s-time").value=nowStr();
+  $("s-date").value=todayStr(); setTimeNow();
   window.scrollTo(0,0);
 }
 
@@ -1853,6 +1883,16 @@ function printPicked(all){
 }
 
 /* ---------- 면접일지 ---------- */
+function journalWhen(s){
+  const day=korDate(s.date);
+  const t=String(s.time||"");
+  const m=t.match(/^(\d{1,2}):(\d{2})$/);
+  if(!m) return day;
+  const h=Number(m[1]), mi=Number(m[2]);
+  const tot=h*60+mi+50;
+  const eh=Math.floor(tot/60)%24, em=tot%60;
+  return day+" "+pad(h)+":"+pad(mi)+"~"+pad(eh)+":"+pad(em);
+}
 function fitStyle(t,tall){
   const n=String(t||"").length;
   const steps=tall
@@ -1869,7 +1909,7 @@ function journalHTML(s,editable,pfx){
   const I=function(n){ return editable?' id="'+P+n+'"':""; };
   const tea=(s.teachers||[]).slice(0,3);
   while(tea.length<3) tea.push("");
-  const sign=function(n){ return (n?esc(n)+" ":"")+"<i>(서명)</i>"; };
+  const sign=function(n){ return '<span class="nm">'+(n?esc(n):"")+'</span><i>(서명)</i>'; };
   const blank='<td class="c" colspan="2">&nbsp;</td>';
   const gStyle=fitStyle(j.guidance,true), oStyle=fitStyle(j.opinion,false);
   return '<div class="journal'+(editable?" jt-edit":"")+'">'+
@@ -1891,7 +1931,7 @@ function journalHTML(s,editable,pfx){
   '<tr class="srow">'+blank+blank+blank+blank+"</tr>"+
   '<tr class="rw">'+
     '<th colspan="2">지도 일시</th>'+
-    '<td class="c" colspan="3"'+I("j-when")+ed+">"+esc(j.when||korDate(s.date,s.time))+"</td>"+
+    '<td class="c" colspan="3"'+I("j-when")+ed+">"+esc(j.when||journalWhen(s))+"</td>"+
     "<th>장소</th>"+
     '<td class="c" colspan="2"'+I("j-place")+ed+">"+esc(j.place||s.place||"")+"</td>"+
   '</tr><tr class="rw">'+
