@@ -205,7 +205,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v5.5</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v5.6</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -383,7 +383,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </div>
 
 <div class="foot">
-  <b>버전 5.5</b> · 2026-09-15<br>
+  <b>버전 5.6</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -1919,7 +1919,10 @@ function shortUniv(u){
     .replace(/대학(?!원)$/,"대");
 }
 function admForLedger(a){
-  const t=String(a||"").trim();
+  let t=String(a||"").trim();
+  /* 일지에서 옮겨 오며 앞에 붙은 큰 틀(학생부종합 등)을 떼어 냅니다 */
+  t=t.replace(/^(학생부\s*종합|학생부\s*교과|종합|교과|기타)\s*[·ㆍ・∙‧•\/|,\-–—]?\s*/,"").trim();
+  t=t.replace(/^[·ㆍ・∙‧•\/|,\-–—]\s*/,"").trim();
   if(!t) return "";
   return /전형\s*$/.test(t) ? t : (t+" 전형");
 }
