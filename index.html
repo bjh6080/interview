@@ -205,7 +205,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v5.1</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v5.2</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -383,7 +383,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </div>
 
 <div class="foot">
-  <b>버전 5.1</b> · 2026-09-15<br>
+  <b>버전 5.2</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -1663,6 +1663,10 @@ async function saveSession(d,S,out){
   };
   if(d.blob){ try{ await VDB.put(id,d.blob); data.hasVideo=true; }catch(e){} }
   await putSession(data,S.tids);
+  if(!solo&&(data.teachers||[]).length){
+    const okLed=await sendLedger(data);
+    if(!okLed) toast("면접 지도 대장에는 적지 못했습니다. 선생님께 알려 주세요.");
+  }
   DRAFT=null;
   renderStudentReport(data);
 }
@@ -1814,7 +1818,8 @@ async function tSession(id){
     '<div class="btnrow">'+
       '<button class="btn" type="button" onclick="App.saveJournal()">일지 저장</button>'+
       '<button class="btn ghost" type="button" onclick="App.printJournal(\''+s.id+'\')">인쇄 · PDF 저장</button>'+
-      '<button class="btn ghost" type="button" onclick="App.regen()">다시 작성</button></div>'+
+      '<button class="btn ghost" type="button" onclick="App.regen()">다시 작성</button>'+
+      '<button class="btn ghost" type="button" onclick="App.toLedger()">대장에 기록</button></div>'+
     '<p class="hint" id="jmeta"></p></div>'+
     '<div class="card"><h2>학생에게 준 피드백</h2>'+fbBlock(s.fb)+"</div>"+
     '<div class="card"><h2>받아쓴 면접 내용</h2>'+
@@ -1907,6 +1912,27 @@ function printPicked(all){
 }
 
 /* ---------- 면접일지 ---------- */
+function ledgerRow(s){
+  const adm=(s.adm||s.admType||"").trim();
+  const b=[(s.name||"")+"-"+(s.univ||""),(s.major||""),adm].filter(Boolean).join(" ").replace(/\s+/g," ").trim();
+  const p=String(s.date||"").split("-").map(Number);
+  let c="";
+  if(p.length===3&&!isNaN(p[0])){
+    const dt=new Date(p[0],p[1]-1,p[2]);
+    c=p[0]+"."+p[1]+"."+p[2]+". ("+DOW[dt.getDay()]+")요일";
+  }
+  let d="";
+  const m=String(s.time||"").match(/^(\d{1,2}):(\d{2})$/);
+  if(m){
+    const h=Number(m[1]), mi=Number(m[2]), tot=h*60+mi+50;
+    d=pad(h)+":"+pad(mi)+"-"+pad(Math.floor(tot/60)%24)+":"+pad(tot%60)+" (50분)";
+  }
+  return {b:b,c:c,d:d,e:(s.teachers||[]).join(", ")};
+}
+async function sendLedger(s){
+  try{ await api("ledger",{row:ledgerRow(s)},25000); return true; }
+  catch(e){ console.warn("ledger",e); return false; }
+}
 function journalWhen(s){
   const day=korDate(s.date);
   const t=String(s.time||"");
@@ -1989,6 +2015,14 @@ async function saveJournal(){
   await reseal(CUR);
   toast("일지를 저장했습니다");
   $("jmeta").textContent=ME.name+" 선생님이 방금 수정함";
+}
+async function toLedger(){
+  if(!CUR) return;
+  const r=ledgerRow(CUR.data);
+  if(!confirm("면접 지도 대장에 한 줄을 새로 적습니다.\n\n"+r.b+"\n"+r.c+"  "+r.d+"\n"+r.e+"\n\n계속할까요?")) return;
+  toast("대장에 적는 중…");
+  const ok=await sendLedger(CUR.data);
+  toast(ok?"대장에 적었습니다":"대장에 적지 못했습니다");
 }
 async function regen(){
   if(!CUR) return;
@@ -2250,7 +2284,7 @@ const App={
   printReport:printReport, printJournal:printJournal, printAllJournals:printAllJournals, goHome:goHome,
   allJournals:allJournals, pickAll:pickAll, saveOneJournal:saveOneJournal,
   saveAllJournals:saveAllJournals, printOne:printOne, printPicked:printPicked,
-  tList:tList, tStudent:tStudent, tSession:tSession, saveJournal:saveJournal, regen:regen,
+  tList:tList, tStudent:tStudent, tSession:tSession, saveJournal:saveJournal, regen:regen, toLedger:toLedger,
   renderSettings:renderSettings, changePw:changePw, reissue:reissue,
   backupMine:backupMine, importPick:importPick, importFile:importFile
 };
