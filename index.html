@@ -189,6 +189,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 #qbank a{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--rule-strong);
   background:var(--paper);border-radius:8px;text-decoration:none;color:inherit}
 #qbank a:hover{border-color:var(--navy-500);background:var(--mist)}
+#qbank a+a{margin-top:10px}
 #qbank .ic{flex:0 0 24px;font-size:22px;line-height:1;color:var(--navy-900);text-align:center}
 :root[data-theme="dark"] #qbank .ic{color:var(--navy-500)}
 #qbank .tx{flex:1;min-width:0}
@@ -205,7 +206,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v5.6</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v5.7</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -371,6 +372,16 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="qbank">
   <div class="sep"></div>
+
+  <a id="qb-class" hidden href="classroom.html" target="_blank" rel="noopener noreferrer">
+    <span class="ic" aria-hidden="true">&#128205;</span>
+    <span class="tx">
+      <span class="tt">중화고 교실 검색기</span>
+      <span class="ds">학생들이 현재 듣고 있는 수업 및 교실 확인 가능</span>
+    </span>
+    <span class="go" aria-hidden="true">&#8599;</span>
+  </a>
+
   <a href="https://script.google.com/macros/s/AKfycbxMDJy7W9-hfYY3DYPwB-nllGSUFbd4vSZqNh5Ywfs99EpHJBFnFQ_z3fY7iPFgIYDaQQ/exec"
      target="_blank" rel="noopener noreferrer">
     <span class="ic" aria-hidden="true">&#127979;</span>
@@ -380,10 +391,20 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
     </span>
     <span class="go" aria-hidden="true">&#8599;</span>
   </a>
+
+  <a href="https://www.jinhak.or.kr/subList/20000000267" target="_blank" rel="noopener noreferrer">
+    <span class="ic" aria-hidden="true">&#128209;</span>
+    <span class="tx">
+      <span class="tt">대학별 선행학습 영향평가 보고서</span>
+      <span class="ds" id="qreport-desc">지원한 대학 검색 → 3개년치 보고서 '부록'에 면접 문항 확인 → 출제 의도 등 점검<br>새로운 창으로 열리며, 로그인 이후에도 확인 가능합니다.</span>
+    </span>
+    <span class="go" aria-hidden="true">&#8599;</span>
+  </a>
+
 </div>
 
 <div class="foot">
-  <b>버전 5.6</b> · 2026-09-15<br>
+  <b>버전 5.7</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -775,10 +796,15 @@ function paneError(boxId,msg,retry){
     '<button class="btn ghost" type="button" onclick="App.logout()">로그아웃</button></div></div>';
 }
 function qbankDesc(short){
-  const n=$("qbank-desc"); if(!n) return;
-  n.innerHTML="4개년 선행학습 영향 평가 보고서 기반 질문 검색기"+
-    (short?"":"<br>새로운 창으로 열리며, 로그인 이후에도 확인 가능합니다.");
-  const b=$("qbank"); if(b) b.className=short&&ME&&ME.role==="teacher"?"wide":"";
+  const tail=short?"":"<br>새로운 창으로 열리며, 로그인 이후에도 확인 가능합니다.";
+  const a=$("qbank-desc");
+  if(a) a.innerHTML="4개년 선행학습 영향 평가 보고서 기반 질문 검색기"+tail;
+  const b=$("qreport-desc");
+  if(b) b.innerHTML="지원한 대학 검색 → 3개년치 보고서 '부록'에 면접 문항 확인 → 출제 의도 등 점검"+tail;
+  const c=$("qb-class");
+  if(c) c.hidden=!(short&&ME&&ME.role==="teacher");
+  const box=$("qbank");
+  if(box) box.className=(short&&ME&&ME.role==="teacher")?"wide":"";
 }
 function topbarWho(){
   $("brand").classList.add("click");
