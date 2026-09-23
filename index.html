@@ -206,7 +206,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v6.0</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v6.1</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -302,7 +302,9 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
       <p class="hint" id="prac-note"></p>
       <div id="teacher-wrap" style="margin-top:14px">
         <div style="margin-bottom:6px"><span style="display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--navy-700)">지도교사</span></div>
-        <div class="chips" id="teacher-chips"></div>
+        <input type="text" id="t-search" placeholder="선생님 이름 검색" autocomplete="off" oninput="App.drawChips()">
+        <div id="teacher-list" style="max-height:190px;overflow:auto;border:1px solid var(--rule);border-radius:8px;margin-top:7px;padding:6px"></div>
+        <div class="chips" id="teacher-chips" style="margin-top:9px"></div>
         <p class="hint">여러 명이면 모두 고르세요. 고른 선생님만 이 기록을 열어 볼 수 있습니다.</p>
       </div>
       <div class="row" style="margin-top:14px">
@@ -414,7 +416,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </div>
 
 <div class="foot">
-  <b>버전 6.0</b> · 2026-09-15<br>
+  <b>버전 6.1</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -1003,14 +1005,33 @@ function stTab(w){
   if(w==="settings") renderSettings();
 }
 function drawChips(){
-  const box=$("teacher-chips"); box.innerHTML="";
-  if(!DIR.length){ box.innerHTML='<span class="hint">아직 가입한 선생님이 없습니다. 선생님이 먼저 교사 계정을 만들어야 여기에 나타납니다.</span>'; return; }
-  DIR.slice().sort(function(a,b){return a.name.localeCompare(b.name,"ko")}).forEach(function(t){
-    const b=el("button","chip",t.name); b.type="button";
-    b.setAttribute("aria-pressed",PICKED.indexOf(t.id)>=0);
-    b.onclick=function(){ const i=PICKED.indexOf(t.id); if(i<0)PICKED.push(t.id); else PICKED.splice(i,1); drawChips(); };
-    box.appendChild(b);
-  });
+  const list=$("teacher-list"), box=$("teacher-chips");
+  if(!list||!box) return;
+  const q=normName(($("t-search")||{}).value||"");
+  const all=DIR.slice().sort(function(a,b){return a.name.localeCompare(b.name,"ko")});
+  if(!all.length){
+    list.innerHTML='<p class="hint" style="margin:6px">아직 가입한 선생님이 없습니다. 선생님이 먼저 교사 계정을 만들어야 나타납니다.</p>';
+  }else{
+    const hit=all.filter(function(t){ return !q || normName(t.name).indexOf(q)>=0; });
+    list.innerHTML=hit.length
+      ? hit.map(function(t){
+          const on=PICKED.indexOf(t.id)>=0;
+          return '<label class="jpick" style="margin:0;padding:8px 6px;color:var(--ink);border-bottom:1px solid var(--rule)">'+
+            '<input type="checkbox" '+(on?"checked":"")+' onchange="App.pickTeacher(\''+esc(t.id)+'\')"> <span>'+esc(t.name)+" 선생님</span></label>";
+        }).join("")
+      : '<p class="hint" style="margin:6px">찾는 이름이 없습니다.</p>';
+  }
+  box.innerHTML=PICKED.map(function(id){
+    const d=DIR.filter(function(x){return x.id===id})[0];
+    if(!d) return "";
+    return '<button class="chip" type="button" aria-pressed="true" onclick="App.pickTeacher(\''+esc(id)+'\')">'+
+      esc(d.name)+" ✕</button>";
+  }).join("");
+}
+function pickTeacher(id){
+  const i=PICKED.indexOf(id);
+  if(i<0) PICKED.push(id); else PICKED.splice(i,1);
+  drawChips();
 }
 function pickedNames(){
   return PICKED.map(function(id){ const d=DIR.filter(function(x){return x.id===id})[0]; return d?d.name:""; }).filter(Boolean);
@@ -1845,13 +1866,21 @@ async function tListInner(box){
     if(!by[k]) by[k]={sid:s.sid,name:s.name,items:[],last:0};
     by[k].items.push(e); by[k].last=Math.max(by[k].last,s.createdAt);
   });
-  const studs=Object.keys(by).map(function(k){return by[k]}).sort(function(a,b){return b.last-a.last});
+  await loadMyStudents(); await tryNamesKey();
+  MYST.forEach(function(x){
+    const k=x.sid+"|"+x.name;
+    if(!by[k]) by[k]={sid:x.sid,name:x.name,items:[],last:0};
+  });
+  const studs=Object.keys(by).map(function(k){return by[k]}).sort(function(a,b){
+    return (b.last-a.last)||String(a.sid).localeCompare(String(b.sid));
+  });
   let html='<div class="card"><h2>'+esc(ME.name)+" 선생님이 지도한 학생</h2>"+
     '<p class="lede">'+(studs.length?studs.length+"명 · 면접 "+ss.length+"회":"아직 선생님을 지도교사로 고른 학생이 없습니다.")+"</p>"+
     '<div class="btnrow">'+
       '<button class="btn ghost sm" type="button" onclick="App.backupMine()">전체 백업 내려받기</button>'+
       '<button class="btn ghost sm" type="button" onclick="App.importPick()">백업 불러오기</button>'+
       '<button class="btn ghost sm" type="button" onclick="App.allJournals()">일지 전체 보기</button>'+
+      '<button class="btn ghost sm" type="button" onclick="App.myStudents()">내 학생 관리</button>'+
       '<button class="btn ghost sm" type="button" onclick="App.renderSettings(true)">설정</button>'+
       (isAdmin()?'<button class="btn ghost sm" type="button" onclick="App.adminPanel()">관리자</button>':"")+
       "</div>"+
@@ -1862,8 +1891,8 @@ async function tListInner(box){
     html+='<div class="card"><div class="scrollx"><table class="grid">'+
       "<tr><th>학번</th><th>이름</th><th>면접</th><th>최근</th><th></th></tr>"+
       studs.map(function(u){
-        return "<tr><td>"+esc(u.sid)+"</td><td>"+esc(u.name)+"</td><td>"+u.items.length+"회</td>"+
-          "<td>"+korDate(u.items[0].data.date)+"</td>"+
+        return "<tr><td>"+esc(u.sid)+"</td><td>"+esc(u.name)+"</td><td>"+(u.items.length||"—")+"</td>"+
+          "<td>"+(u.items.length?korDate(u.items[0].data.date):"—")+"</td>"+
           '<td><button class="btn ghost sm" type="button" onclick="App.tStudent(\''+esc(u.sid)+"','"+esc(u.name)+'\')">기록 보기</button></td></tr>';
       }).join("")+"</table></div></div>";
   }
@@ -1873,13 +1902,16 @@ async function tStudent(sid,name){
   const ss=(await loadMine()).filter(function(e){return e.data.sid===sid&&e.data.name===name});
   let html='<div class="card"><button class="btn ghost sm" type="button" onclick="App.tList()">← 학생 목록</button>'+
     '<h2 style="margin-top:12px">'+esc(sid)+" "+esc(name)+"</h2>"+
-    '<p class="lede">면접 '+ss.length+"회</p></div>";
+    '<p class="lede">면접 '+ss.length+"회</p>"+
+    '<div class="btnrow"><button class="btn" type="button" onclick="App.manualForm(\''+esc(sid)+"','"+esc(name)+'\')">수기 일지 추가</button></div></div>';
+  if(!ss.length) html+='<div class="empty">아직 기록이 없습니다. 수기 일지를 추가할 수 있습니다.</div>';
   ss.forEach(function(e){
     const s=e.data;
     html+='<div class="item" onclick="App.tSession(\''+s.id+'\')">'+
-      '<span class="badge">'+(s.journal&&s.journal.edited?"수정함":"자동 작성")+"</span>"+
+      '<span class="badge">'+(s.manual?"수기":(s.journal&&s.journal.edited?"수정함":"자동 작성"))+"</span>"+
       '<div class="t">'+esc(s.univ)+" "+esc(s.major)+"</div>"+
-      '<div class="m">'+korDate(s.date,s.time)+(admLabel(s)?" · "+esc(admLabel(s)):"")+" · "+mmss(s.durMs)+"</div></div>";
+      '<div class="m">'+korDate(s.date,s.time)+(admLabel(s)?" · "+esc(admLabel(s)):"")+
+      (s.manual?"":" · "+mmss(s.durMs))+"</div></div>";
   });
   $("pane-teacher").innerHTML=html; window.scrollTo(0,0);
 }
@@ -1897,9 +1929,9 @@ async function tSession(id){
       '<button class="btn ghost" type="button" onclick="App.regen()">다시 작성</button>'+
       '<button class="btn ghost" type="button" onclick="App.toLedger()">대장에 기록</button></div>'+
     '<p class="hint" id="jmeta"></p></div>'+
-    '<div class="card"><h2>학생에게 준 피드백</h2>'+fbBlock(s.fb)+"</div>"+
-    '<div class="card"><h2>받아쓴 면접 내용</h2>'+
-      '<div class="live" style="max-height:300px">'+esc(s.transcript||"").split("\n").map(function(x){return "<div>"+x+"</div>"}).join("")+"</div></div>";
+    (s.manual?"":'<div class="card"><h2>학생에게 준 피드백</h2>'+fbBlock(s.fb)+"</div>")+
+    (s.manual?"":'<div class="card"><h2>받아쓴 면접 내용</h2>'+
+      '<div class="live" style="max-height:300px">'+esc(s.transcript||"").split("\n").map(function(x){return "<div>"+x+"</div>"}).join("")+"</div></div>");
   $("jwrap").innerHTML=journalHTML(s,true);
   if(s.journal&&s.journal.edited)
     $("jmeta").textContent=s.journal.editedBy+" 선생님이 "+new Date(s.journal.editedAt).toLocaleString("ko-KR")+"에 수정함";
@@ -2136,17 +2168,198 @@ async function regen(){
 }
 
 
+
+/* ======================= 교사: 내 학생 · 수기 일지 ======================= */
+let MYST=[], MYCLASS=null;
+
+async function loadMyStudents(){
+  try{
+    const d=await Store.get("dir","students_"+ME.aid);
+    MYST=(d&&d.enc)?await openJSON(ME.mkKey,d.enc):[];
+  }catch(e){ MYST=[]; }
+  return MYST;
+}
+async function saveMyStudents(){
+  await Store.put("dir","students_"+ME.aid,{enc:await sealJSON(ME.mkKey,MYST),at:Date.now()});
+}
+function inMyst(sid){ return MYST.some(function(x){return x.sid===sid}); }
+
+async function myStudents(){
+  const box=$("pane-teacher");
+  box.innerHTML='<div class="card"><p class="lede"><i class="spin"></i> 여는 중…</p></div>';
+  try{
+    await loadMyStudents();
+    await tryNamesKey();
+    drawMyStudents();
+  }catch(err){ paneError("pane-teacher","열지 못했습니다: "+((err&&err.message)||err),"App.myStudents()"); }
+}
+function drawMyStudents(){
+  const cls={};
+  SIDS.forEach(function(sid){ (cls[sid.slice(0,3)]=cls[sid.slice(0,3)]||[]).push(sid); });
+  const keys=Object.keys(cls).sort();
+  const known=namesReady();
+  let html='<div class="card">'+
+    '<button class="btn ghost sm" type="button" onclick="App.tList()">← 학생 목록</button>'+
+    '<h2 style="margin-top:12px">내 학생 관리</h2>'+
+    '<p class="lede">지도하는 학생을 골라 두면, 기록이 없어도 목록에 나타나고 수기 일지를 쓸 수 있습니다.</p>'+
+    '<p class="hint" id="myst-count">지금 '+MYST.length+"명</p>"+
+    '<div class="btnrow"><button class="btn" type="button" onclick="App.mystSave()">저장</button></div></div>';
+
+  if(!known){
+    html+='<div class="card"><div class="notice warn">학생 이름을 아직 볼 수 없습니다. 관리자(변준한 선생님)가 관리자 화면에서 열람 코드를 한 번 넣으면, 그때부터 모든 선생님 화면에 이름이 나옵니다. 그전까지는 아래에서 학번과 이름을 직접 적어 추가해 주세요.</div></div>';
+  }else{
+    html+='<div class="card"><h3 style="margin-top:0">반 고르기</h3><div class="chips">'+
+      keys.map(function(c){
+        const on=cls[c].filter(function(x){return inMyst(x)}).length;
+        return '<button class="chip" type="button" aria-pressed="'+(MYCLASS===c)+'" onclick="App.mystClass(\''+c+'\')">'+
+          Number(c.slice(2))+"반 <span style='opacity:.7'>"+on+"</span></button>";
+      }).join("")+"</div>";
+    if(MYCLASS){
+      html+='<div style="margin-top:12px">'+cls[MYCLASS].map(function(sid){
+        return '<label class="jpick" style="margin:0;padding:7px 2px;border-bottom:1px solid var(--rule);color:var(--ink)">'+
+          '<input type="checkbox" '+(inMyst(sid)?"checked":"")+' onchange="App.mystToggle(\''+sid+'\')"> '+
+          "<span>"+sid+" "+esc(nameOf(sid))+"</span></label>";
+      }).join("")+"</div>";
+    }
+    html+="</div>";
+  }
+
+  html+='<div class="card"><h3 style="margin-top:0">직접 추가</h3>'+
+    '<div class="row"><label class="f"><span>학번</span><input type="text" id="myst-sid" inputmode="numeric" placeholder="30412"></label>'+
+    '<label class="f"><span>이름</span><input type="text" id="myst-name" placeholder="홍길동"></label></div>'+
+    '<button class="btn ghost" type="button" onclick="App.mystAdd()">추가</button>'+
+    '<p class="err" id="myst-err"></p></div>';
+
+  if(MYST.length){
+    html+='<div class="card"><h3 style="margin-top:0">내 학생 '+MYST.length+"명</h3>"+
+      MYST.slice().sort(function(a,b){return a.sid.localeCompare(b.sid)}).map(function(x){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:7px 2px;border-bottom:1px solid var(--rule)">'+
+          "<span>"+esc(x.sid)+" "+esc(x.name)+"</span>"+
+          '<button class="btn ghost sm" type="button" style="margin-left:auto;padding:4px 9px" onclick="App.mystRemove(\''+esc(x.sid)+'\')">빼기</button></div>';
+      }).join("")+"</div>";
+  }
+  $("pane-teacher").innerHTML=html;
+  window.scrollTo(0,0);
+}
+function mystClass(c){ MYCLASS=(MYCLASS===c)?null:c; drawMyStudents(); }
+function mystToggle(sid){
+  if(inMyst(sid)) MYST=MYST.filter(function(x){return x.sid!==sid});
+  else MYST.push({sid:sid,name:nameOf(sid)||""});
+  drawMyStudents();
+}
+function mystRemove(sid){ MYST=MYST.filter(function(x){return x.sid!==sid}); drawMyStudents(); }
+async function mystAdd(){
+  const e=$("myst-err"); e.textContent="";
+  const sid=($("myst-sid").value||"").trim(), name=normName($("myst-name").value);
+  if(!/^\d{5}$/.test(sid)||name.length<2) return e.textContent="학번과 이름을 정확히 입력해 주세요.";
+  if(!(await inRoster(sid,name))) return e.textContent="명렬표에 없는 학번·이름입니다.";
+  if(inMyst(sid)) return e.textContent="이미 들어 있습니다.";
+  MYST.push({sid:sid,name:name});
+  drawMyStudents();
+}
+async function mystSave(){
+  try{ await saveMyStudents(); toast(MYST.length+"명 저장했습니다"); }
+  catch(e){ toast("저장하지 못했습니다: "+e.message); }
+}
+
+/* ---------- 수기 일지 ---------- */
+function manualForm(sid,name){
+  const d=new Date(), pad2=pad;
+  $("pane-teacher").innerHTML='<div class="card">'+
+    '<button class="btn ghost sm" type="button" onclick="App.tStudent(\''+esc(sid)+"','"+esc(name)+'\')">← '+esc(name)+" 기록</button>"+
+    '<h2 style="margin-top:12px">수기 일지 작성</h2>'+
+    '<p class="lede">'+esc(sid)+" "+esc(name)+" 학생의 면접지도 일지를 직접 적습니다. 저장하면 면접 지도 대장에도 한 줄 올라갑니다.</p>"+
+    '<label class="f"><span>대학</span><input type="text" id="mj-univ" placeholder="○○대학교"></label>'+
+    '<div class="row"><label class="f"><span>학과·모집단위</span><input type="text" id="mj-major" placeholder="사회학과"></label>'+
+    '<label class="f"><span>전형 유형</span><select id="mj-admtype"><option value="">고르세요</option>'+
+      '<option>학생부종합</option><option>학생부교과</option><option>기타</option></select></label></div>'+
+    '<label class="f"><span>전형명</span><input type="text" id="mj-adm" placeholder="해당 대학의 정확한 전형 명칭"></label>'+
+    '<div class="row"><label class="f"><span>지도 일시</span><input type="date" id="mj-date" value="'+todayStr()+'"></label>'+
+    '<label class="f"><span>시작 시각</span><span style="display:flex;gap:5px">'+
+      '<select id="mj-ap" style="flex:1;min-width:0"><option value="0">오전</option><option value="1">오후</option></select>'+
+      '<select id="mj-hh" style="flex:1;min-width:0"></select>'+
+      '<select id="mj-mm" style="flex:1;min-width:0"></select></span></label></div>'+
+    '<label class="f"><span>장소</span><input type="text" id="mj-place" value="본관 4층 컨설팅룸"></label>'+
+    '<label class="f"><span>지도 내용 (질문을 한 줄에 하나씩)</span>'+
+      '<textarea id="mj-guide" style="min-height:150px" placeholder="1. 지원 동기는 무엇인가?&#10;2. …"></textarea></label>'+
+    '<label class="f"><span>지도 결과 및 의견</span><textarea id="mj-op" style="min-height:120px"></textarea></label>'+
+    '<p class="err" id="mj-err"></p>'+
+    '<div class="btnrow"><button class="btn" id="mj-save" type="button" onclick="App.manualSave(\''+esc(sid)+"','"+esc(name)+'\')">일지 저장</button></div></div>';
+  let a="",b="";
+  for(let h=1;h<=12;h++) a+='<option value="'+h+'">'+h+"시</option>";
+  for(let m=0;m<60;m+=5) b+='<option value="'+pad2(m)+'">'+pad2(m)+"분</option>";
+  $("mj-hh").innerHTML=a; $("mj-mm").innerHTML=b;
+  $("mj-ap").value=(d.getHours()<12?"0":"1");
+  $("mj-hh").value=String((d.getHours()%12)||12);
+  $("mj-mm").value=pad2(Math.floor(d.getMinutes()/5)*5);
+  window.scrollTo(0,0);
+}
+async function manualSave(sid,name){
+  const e=$("mj-err"); e.textContent="";
+  const univ=$("mj-univ").value.trim(), major=$("mj-major").value.trim();
+  if(!univ||!major) return e.textContent="대학과 학과를 입력해 주세요.";
+  let h=Number($("mj-hh").value)%12; if($("mj-ap").value==="1") h+=12;
+  const time=pad(h)+":"+$("mj-mm").value;
+  const btn=$("mj-save"); busy(btn,true,"저장하는 중…");
+  try{
+    const id="m"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    const data={
+      id:id, sid:sid, name:name, univ:univ, major:major,
+      adm:$("mj-adm").value.trim(), admType:$("mj-admtype").value,
+      teachers:[ME.name], date:$("mj-date").value||todayStr(), time:time,
+      place:$("mj-place").value.trim()||"본관 4층 컨설팅룸",
+      durMs:0, rate:0, stability:null, chars:0, transcript:"", fb:null,
+      manual:true, practice:"with", mode:"manual", hasVideo:false,
+      journal:{questions:[],guidance:$("mj-guide").value.trim(),opinion:$("mj-op").value.trim(),
+               edited:true,editedBy:ME.name,editedAt:Date.now()},
+      createdAt:Date.now()
+    };
+    await putSession(data,[ME.aid]);
+    const ok=await sendLedger(data);
+    toast(ok?"일지를 저장하고 대장에 올렸습니다":"일지는 저장했지만 대장에는 올리지 못했습니다");
+    tStudent(sid,name);
+  }catch(err){ e.textContent="저장하지 못했습니다: "+((err&&err.message)||err); }
+  finally{ busy(btn,false,"일지 저장"); }
+}
+
 /* ======================= 관리자 ======================= */
 let ADMSEL=[], ADMCLASS=null;
 
-async function unlockNames(code){
-  const raw=normCode(code);
-  if(raw.length<6) throw new Error("열람 코드를 확인해 주세요.");
-  const k=await pbkKey(raw,TE.encode(NAMES_SALT));
-  const b=await open_(k,NAMES_ENC);
+async function decryptNames(raw){
+  const b=await open_(await rawKey(raw),NAMES_ENC);
   NAMES={};
   JSON.parse(TD.decode(b)).forEach(function(x){ NAMES[x[0]]=x[1]; });
   try{ sessionStorage.setItem(LSK+"names",JSON.stringify(NAMES)); }catch(e){}
+  return NAMES;
+}
+async function publishNamesKey(raw){
+  try{
+    await loadDir();
+    const map={};
+    for(let i=0;i<DIR.length;i++){
+      const t=DIR[i];
+      if(t&&t.pub){ try{ map[t.id]=await wrapToPub(t.pub,raw); }catch(e){} }
+    }
+    await Store.put("dir","nameskey",{map:map,at:Date.now()});
+  }catch(e){ console.warn("nameskey",e); }
+}
+async function tryNamesKey(){
+  if(namesReady()) return true;
+  if(!ME||ME.role!=="teacher"||!ME.priv) return false;
+  try{
+    const d=await Store.get("dir","nameskey");
+    const w=d&&d.map&&d.map[ME.aid];
+    if(!w) return false;
+    await decryptNames(await unwrapWithPriv(ME.priv,w));
+    return true;
+  }catch(e){ return false; }
+}
+async function unlockNames(code){
+  const c=normCode(code);
+  if(c.length<6) throw new Error("열람 코드를 확인해 주세요.");
+  const raw=await pbkBits(c,TE.encode(NAMES_SALT),32);
+  await decryptNames(raw);
+  if(isAdmin()) await publishNamesKey(raw);
   return NAMES;
 }
 function namesReady(){
@@ -2596,13 +2809,15 @@ window.addEventListener("beforeunload",function(){ if(M.recording) stopMedia(); 
 const App={
   authTab:authTab, loginStudent:loginStudent, loginTeacher:loginTeacher, logout:logout,
   showReset:showReset, hideReset:hideReset, showWipe:showWipe, doReset:doReset, doWipe:doWipe,
-  stTab:stTab, goRecord:goRecord, toggleRec:toggleRec, cancelRecord:cancelRecord, switchCam:switchCam, retryCam:retryCam, setMode:setMode, setPractice:setPractice, toggleFace:toggleFace, openChrome:openChrome, copyLink:copyLink,
+  stTab:stTab, drawChips:drawChips, pickTeacher:pickTeacher, goRecord:goRecord, toggleRec:toggleRec, cancelRecord:cancelRecord, switchCam:switchCam, retryCam:retryCam, setMode:setMode, setPractice:setPractice, toggleFace:toggleFace, openChrome:openChrome, copyLink:copyLink,
   makeFeedback:makeFeedback, discardDraft:discardDraft, newPractice:newPractice,
   renderStorage:renderStorage, openSession:openSession, redoFeedback:redoFeedback, delSession:delSession, saveVideo:saveVideo,
   printReport:printReport, printJournal:printJournal, printAllJournals:printAllJournals, goHome:goHome,
   allJournals:allJournals, pickAll:pickAll, saveOneJournal:saveOneJournal,
   saveAllJournals:saveAllJournals, printOne:printOne, printPicked:printPicked,
-  tList:tList, tStudent:tStudent, tSession:tSession, saveJournal:saveJournal, regen:regen, toLedger:toLedger,
+  tList:tList, tStudent:tStudent, myStudents:myStudents, mystClass:mystClass,
+  mystToggle:mystToggle, mystRemove:mystRemove, mystAdd:mystAdd, mystSave:mystSave,
+  manualForm:manualForm, manualSave:manualSave, tSession:tSession, saveJournal:saveJournal, regen:regen, toLedger:toLedger,
   renderSettings:renderSettings, changePw:changePw, reissue:reissue,
   adminPanel:adminPanel, admAccess:admAccess, admPwPage:admPwPage, admUnlock:admUnlock,
   admPickClass:admPickClass, admToggle:admToggle, admClass:admClass, admAll:admAll,
