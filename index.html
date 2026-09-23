@@ -162,6 +162,14 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 .jt-edit td.body,.jt-edit td.body2{background:#FCFCFE}
 [contenteditable]{outline:0}
 [contenteditable]:focus{background:#FFFDF0}
+.jhdr{display:flex;align-items:center;gap:10px}
+.jhdr input{width:18px;height:18px;accent-color:var(--navy-900);flex:0 0 auto}
+.jttl{flex:1;min-width:0;text-align:left;background:none;border:0;padding:6px 0;cursor:pointer;
+  color:var(--ink);font-family:inherit;font-size:14px;line-height:1.5}
+.jttl:hover{color:var(--navy-500)}
+.jcar{flex:0 0 auto;color:var(--muted);font-size:13px;transition:transform .15s}
+.jrow[data-open="1"] .jcar{transform:rotate(180deg)}
+@media print{.jhdr{display:none!important}}
 .jpick{display:flex;align-items:center;gap:9px;font-size:14px;margin-bottom:12px;color:var(--navy-700);cursor:pointer}
 .jpick input{width:18px;height:18px;accent-color:var(--navy-900);flex:0 0 auto}
 @media print{
@@ -215,7 +223,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v6.3</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v6.4</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -429,7 +437,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </div>
 
 <div class="foot">
-  <b>버전 6.3</b> · 2026-09-15<br>
+  <b>버전 6.4</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -2009,17 +2017,7 @@ async function allJournals(){
       '<div class="btnrow"><button class="btn ghost sm" type="button" onclick="App.pickAll(true)">모두 선택</button>'+
       '<button class="btn ghost sm" type="button" onclick="App.pickAll(false)">모두 해제</button></div></div>';
     if(!ss.length) html+='<div class="empty">학생이 선생님을 지도교사로 골라 연습하면 여기에 일지가 쌓입니다.</div>';
-    ss.forEach(function(e,i){
-      const d=e.data;
-      html+='<div class="card">'+
-        '<label class="jpick"><input type="checkbox" class="jsel" data-i="'+i+'" checked> '+
-          "<b>"+korDate(d.date,d.time)+"</b> · "+esc(d.sid)+" "+esc(d.name)+" · "+esc(d.univ)+" "+esc(d.major)+"</label>"+
-        journalHTML(d,true,"a"+i+"-")+
-        '<div class="btnrow">'+
-          '<button class="btn ghost sm" type="button" onclick="App.saveOneJournal('+i+')">이 일지 저장</button>'+
-          '<button class="btn ghost sm" type="button" onclick="App.printOne('+i+')">이 일지만 인쇄</button>'+
-        "</div></div>";
-    });
+    ss.forEach(function(e,i){ html+=journalCard(i,e.data,true); });
     box.innerHTML=html;
     window.scrollTo(0,0);
   }catch(err){ paneError("pane-teacher","일지를 불러오지 못했습니다: "+((err&&err.message)||err),"App.allJournals()"); }
@@ -2039,6 +2037,7 @@ async function saveOneJournal(i){
   const e=ALLJ[i]; if(!e) return;
   applyEdit(e,"a"+i+"-");
   await reseal(e);
+  jSync(i);
   toast("저장했습니다");
 }
 async function saveAllJournals(){
@@ -2046,7 +2045,7 @@ async function saveAllJournals(){
   toast("저장하는 중…");
   let n=0;
   for(let i=0;i<ALLJ.length;i++){
-    try{ applyEdit(ALLJ[i],"a"+i+"-"); await reseal(ALLJ[i]); n++; }catch(e){}
+    try{ applyEdit(ALLJ[i],"a"+i+"-"); await reseal(ALLJ[i]); jSync(i); n++; }catch(e){}
   }
   toast(n+"장을 저장했습니다");
 }
@@ -2065,6 +2064,40 @@ function printPicked(all){
   doPrint(pick.map(function(i,k){
     return '<div class="'+(k<pick.length-1?"pagebreak":"")+'">'+journalHTML(ALLJ[i].data,false)+"</div>";
   }).join(""));
+}
+
+function journalHeader(d){
+  const j=d.journal||{};
+  return "<b>"+esc(j.when||journalWhen(d))+"</b> · "+esc(d.sid+" "+d.name)+
+         " · "+esc(((d.univ||"")+" "+(d.major||"")).trim())+(d.manual?" · 수기":"");
+}
+function journalCard(i,d,editable){
+  return '<div class="card jrow" id="jr-'+i+'">'+
+    '<div class="jhdr">'+
+      '<input type="checkbox" class="jsel" data-i="'+i+'" checked>'+
+      '<button type="button" class="jttl" id="jh-'+i+'" onclick="App.jToggle('+i+')">'+journalHeader(d)+"</button>"+
+      '<span class="jcar" aria-hidden="true">▾</span>'+
+    "</div>"+
+    '<div id="jb-'+i+'" hidden'+(editable?' oninput="App.jSync('+i+')"':"")+' style="margin-top:12px">'+
+      journalHTML(d,editable,"a"+i+"-")+
+      (editable?'<div class="btnrow">'+
+        '<button class="btn ghost sm" type="button" onclick="App.saveOneJournal('+i+')">이 일지 저장</button>'+
+        '<button class="btn ghost sm" type="button" onclick="App.printOne('+i+')">이 일지만 인쇄</button></div>':"")+
+    "</div></div>";
+}
+function jToggle(i){
+  const b=$("jb-"+i), r=$("jr-"+i);
+  if(!b) return;
+  b.hidden=!b.hidden;
+  if(r) r.setAttribute("data-open",b.hidden?"0":"1");
+}
+function jSync(i){
+  const el=$("jh-"+i), e=ALLJ[i];
+  if(!el||!e) return;
+  const g=function(n){ const x=$("a"+i+"-"+n); return x?(x.innerText||x.textContent||"").trim():""; };
+  const d=e.data;
+  el.innerHTML="<b>"+esc(g("j-when")||journalWhen(d))+"</b> · "+esc(g("j-stu")||(d.sid+" "+d.name))+
+    " · "+esc(((g("j-univ")||d.univ||"")+" "+(g("j-major")||d.major||"")).trim())+(d.manual?" · 수기":"");
 }
 
 /* ---------- 학년 전체 일지 (열람 권한자) ---------- */
@@ -2107,14 +2140,7 @@ function supDraw(){
       '<button class="btn ghost sm" type="button" onclick="App.pickAll(true)">모두 선택</button>'+
       '<button class="btn ghost sm" type="button" onclick="App.pickAll(false)">모두 해제</button></div></div>';
   if(!hit.length) html+='<div class="empty">조건에 맞는 일지가 없습니다.</div>';
-  hit.forEach(function(x){
-    const d=x.e.data;
-    html+='<div class="card">'+
-      '<label class="jpick"><input type="checkbox" class="jsel" data-i="'+x.i+'" checked> '+
-        "<b>"+korDate(d.date,d.time)+"</b> · "+esc(d.sid)+" "+esc(d.name)+" · "+
-        esc((d.teachers||[]).join(", "))+" 선생님"+(d.manual?" · 수기":"")+"</label>"+
-      journalHTML(d,false)+"</div>";
-  });
+  hit.forEach(function(x){ html+=journalCard(x.i,x.e.data,false); });
   $("pane-teacher").innerHTML=html;
   window.scrollTo(0,0);
 }
@@ -2920,7 +2946,8 @@ const App={
   makeFeedback:makeFeedback, discardDraft:discardDraft, newPractice:newPractice,
   renderStorage:renderStorage, openSession:openSession, redoFeedback:redoFeedback, delSession:delSession, saveVideo:saveVideo,
   printReport:printReport, printJournal:printJournal, printAllJournals:printAllJournals, goHome:goHome,
-  allJournals:allJournals, supAll:supAll, supFilter:supFilter, pickAll:pickAll, saveOneJournal:saveOneJournal,
+  allJournals:allJournals, supAll:supAll, supFilter:supFilter, pickAll:pickAll,
+  jToggle:jToggle, jSync:jSync, saveOneJournal:saveOneJournal,
   saveAllJournals:saveAllJournals, printOne:printOne, printPicked:printPicked,
   tList:tList, tStudent:tStudent, myStudents:myStudents, mystClass:mystClass,
   mystToggle:mystToggle, mystRemove:mystRemove, mystAdd:mystAdd, mystSave:mystSave,
