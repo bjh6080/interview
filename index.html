@@ -88,6 +88,15 @@ textarea{min-height:110px;line-height:1.7;resize:vertical}
 .tabs button[aria-selected=true]{background:var(--paper);box-shadow:var(--shadow);color:var(--navy-900)}
 
 .chips{display:flex;flex-wrap:wrap;gap:7px}
+.tsel{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:10px 12px;border:1px solid var(--rule-strong);border-radius:7px;background:var(--paper);
+  color:var(--ink);font-size:16px;font-family:inherit;cursor:pointer;text-align:left}
+.tsel .arw{color:var(--muted);font-size:13px;transition:transform .15s}
+.tsel[aria-expanded=true] .arw{transform:rotate(180deg)}
+.tpanel{border:1px solid var(--rule-strong);border-top:0;border-radius:0 0 8px 8px;
+  padding:9px;background:var(--paper);margin-top:-1px}
+.tpanel input{margin-bottom:7px}
+#teacher-list{max-height:210px;overflow:auto}
 .chip{border:1px solid var(--rule-strong);background:var(--paper);border-radius:999px;padding:6px 13px;font-size:14px;cursor:pointer}
 .chip[aria-pressed=true]{background:var(--navy-900);border-color:var(--navy-900);color:#fff}
 :root[data-theme="dark"] .chip[aria-pressed=true]{background:var(--navy-500);border-color:var(--navy-500);color:#08131C}
@@ -206,7 +215,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v6.1</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v6.2</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -302,8 +311,12 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
       <p class="hint" id="prac-note"></p>
       <div id="teacher-wrap" style="margin-top:14px">
         <div style="margin-bottom:6px"><span style="display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--navy-700)">지도교사</span></div>
-        <input type="text" id="t-search" placeholder="선생님 이름 검색" autocomplete="off" oninput="App.drawChips()">
-        <div id="teacher-list" style="max-height:190px;overflow:auto;border:1px solid var(--rule);border-radius:8px;margin-top:7px;padding:6px"></div>
+        <button type="button" id="t-toggle" class="tsel" onclick="App.toggleTeacherPanel()">
+          <span id="t-label">선생님 고르기</span><span class="arw" aria-hidden="true">▾</span></button>
+        <div id="t-panel" hidden class="tpanel">
+          <input type="text" id="t-search" placeholder="이름을 입력하세요" autocomplete="off" oninput="App.drawChips()">
+          <div id="teacher-list"></div>
+        </div>
         <div class="chips" id="teacher-chips" style="margin-top:9px"></div>
         <p class="hint">여러 명이면 모두 고르세요. 고른 선생님만 이 기록을 열어 볼 수 있습니다.</p>
       </div>
@@ -388,8 +401,8 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
      target="_blank" rel="noopener noreferrer">
     <span class="ic" aria-hidden="true">&#128203;</span>
     <span class="tx">
-      <span class="tt">면접 지도 일지</span>
-      <span class="ds">면접 지도 일지 스프레드 시트</span>
+      <span class="tt">면접 지도 대장</span>
+      <span class="ds">면접 지도 대장 스프레드 시트</span>
     </span>
     <span class="go" aria-hidden="true">&#8599;</span>
   </a>
@@ -416,7 +429,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </div>
 
 <div class="foot">
-  <b>버전 6.1</b> · 2026-09-15<br>
+  <b>버전 6.2</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -1004,8 +1017,16 @@ function stTab(w){
   if(w==="storage") renderStorage();
   if(w==="settings") renderSettings();
 }
+function toggleTeacherPanel(open){
+  const p=$("t-panel"), b=$("t-toggle");
+  if(!p||!b) return;
+  const on=(open===undefined)?p.hidden:open;
+  p.hidden=!on;
+  b.setAttribute("aria-expanded",on?"true":"false");
+  if(on){ const q=$("t-search"); if(q){ q.value=""; setTimeout(function(){q.focus()},30); } drawChips(); }
+}
 function drawChips(){
-  const list=$("teacher-list"), box=$("teacher-chips");
+  const list=$("teacher-list"), box=$("teacher-chips"), lab=$("t-label");
   if(!list||!box) return;
   const q=normName(($("t-search")||{}).value||"");
   const all=DIR.slice().sort(function(a,b){return a.name.localeCompare(b.name,"ko")});
@@ -1027,6 +1048,7 @@ function drawChips(){
     return '<button class="chip" type="button" aria-pressed="true" onclick="App.pickTeacher(\''+esc(id)+'\')">'+
       esc(d.name)+" ✕</button>";
   }).join("");
+  if(lab) lab.textContent=PICKED.length?(pickedNames().join(", ")):"선생님 고르기";
 }
 function pickTeacher(id){
   const i=PICKED.indexOf(id);
@@ -1047,6 +1069,7 @@ function setPractice(m){
   $("prac-text").setAttribute("aria-pressed",m==="text");
   $("prac-solo").setAttribute("aria-pressed",m==="solo");
   $("teacher-wrap").hidden=(m!=="with");
+  if(m!=="with") toggleTeacherPanel(false);
   const go=$("btn-go");
   if(m==="with"){
     REC_MODE=hasSR()?"stt":"audio";
@@ -2809,7 +2832,7 @@ window.addEventListener("beforeunload",function(){ if(M.recording) stopMedia(); 
 const App={
   authTab:authTab, loginStudent:loginStudent, loginTeacher:loginTeacher, logout:logout,
   showReset:showReset, hideReset:hideReset, showWipe:showWipe, doReset:doReset, doWipe:doWipe,
-  stTab:stTab, drawChips:drawChips, pickTeacher:pickTeacher, goRecord:goRecord, toggleRec:toggleRec, cancelRecord:cancelRecord, switchCam:switchCam, retryCam:retryCam, setMode:setMode, setPractice:setPractice, toggleFace:toggleFace, openChrome:openChrome, copyLink:copyLink,
+  stTab:stTab, drawChips:drawChips, toggleTeacherPanel:toggleTeacherPanel, pickTeacher:pickTeacher, goRecord:goRecord, toggleRec:toggleRec, cancelRecord:cancelRecord, switchCam:switchCam, retryCam:retryCam, setMode:setMode, setPractice:setPractice, toggleFace:toggleFace, openChrome:openChrome, copyLink:copyLink,
   makeFeedback:makeFeedback, discardDraft:discardDraft, newPractice:newPractice,
   renderStorage:renderStorage, openSession:openSession, redoFeedback:redoFeedback, delSession:delSession, saveVideo:saveVideo,
   printReport:printReport, printJournal:printJournal, printAllJournals:printAllJournals, goHome:goHome,
