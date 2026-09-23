@@ -206,7 +206,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 
 <div id="inapp" hidden></div>
 <header class="topbar">
-  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v5.8</span></div>
+  <div class="brand" id="brand" onclick="App.goHome()">중화고 면접 연습기 <span style="font-family:var(--sans);font-weight:400;font-size:11px;opacity:.6">v6.0</span></div>
   <div class="who" id="who"><span class="by">제작: 변준한</span></div>
 </header>
 
@@ -250,7 +250,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
     <h2>비밀번호 다시 정하기</h2>
     <p class="lede">계정을 만들 때 받은 복구 코드가 있어야 기록을 그대로 지킬 수 있습니다.</p>
     <div id="reset-id"></div>
-    <label class="f"><span>복구 코드</span><input type="text" id="rs-code" autocomplete="off" placeholder="XXXX-XXXX-XXXX"></label>
+    <label class="f"><span>복구 코드</span><input type="text" id="rs-code" autocomplete="off" placeholder="관리자 열람 코드"></label>
     <label class="f"><span>새 비밀번호</span><input type="password" id="rs-pw" autocomplete="new-password" placeholder="4자 이상"></label>
     <p class="err" id="rs-err"></p>
     <button class="btn" type="button" onclick="App.doReset()">비밀번호 바꾸기</button>
@@ -414,7 +414,7 @@ table.jt td.body2{height:150px;font-size:13.5px;line-height:1.85;white-space:pre
 </div>
 
 <div class="foot">
-  <b>버전 5.8</b> · 2026-09-15<br>
+  <b>버전 6.0</b> · 2026-09-15<br>
   영상은 학생 휴대폰 안에만 남습니다. 나머지 기록은 암호를 걸어 담당 선생님 구글 시트에 저장하며, 본인과 본인이 고른 지도교사만 열 수 있습니다.<br>피드백을 만들 때는 이름·학번·대학명을 빼고 면접 대화 내용만 보냅니다.
 </div>
 
@@ -538,9 +538,12 @@ const normCode=(s)=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 const normName=(s)=>String(s||"").trim().replace(/\s+/g,"");
 
 /* ======================= 명렬표 ======================= */
-const SIDS=["30100","30101","30102","30103","30104","30105","30107","30108","30109","30110","30111","30112","30113","30114","30115","30116","30117","30118","30119","30120","30121","30122","30123","30124","30125","30126","30127","30201","30202","30203","30204","30205","30206","30207","30208","30209","30210","30211","30212","30213","30214","30215","30216","30217","30218","30219","30220","30221","30222","30223","30224","30225","30226","30227","30301","30302","30303","30304","30305","30306","30307","30308","30309","30310","30311","30312","30313","30314","30315","30316","30317","30318","30319","30320","30321","30322","30323","30324","30325","30326","30327","30401","30402","30403","30404","30405","30406","30407","30408","30409","30410","30411","30412","30413","30414","30415","30416","30417","30418","30419","30420","30421","30422","30423","30424","30425","30426","30427","30501","30502","30503","30504","30505","30506","30507","30508","30509","30510","30511","30512","30513","30514","30515","30516","30517","30518","30519","30520","30521","30522","30523","30524","30525","30526","30527","30601","30602","30603","30604","30605","30606","30607","30608","30609","30610","30611","30612","30613","30614","30615","30616","30617","30618","30619","30620","30621","30622","30623","30624","30625","30626","30627","30701","30702","30703","30704","30705","30706","30707","30708","30709","30710","30711","30712","30713","30714","30715","30716","30717","30718","30719","30720","30721","30722","30723","30724","30725","30726","30727"];
+const NAMES_ENC={"iv":"ebXNz9CdbkWaxcoe","ct":"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"};
+const NAMES_SALT="jhmz-names-2026";
+let NAMES=null;
+const SIDS=["30100","30101","30102","30103","30104","30105","30107","30108","30109","30110","30111","30112","30113","30114","30115","30116","30117","30118","30119","30120","30121","30122","30123","30124","30125","30126","30127","30128","30201","30202","30203","30204","30205","30206","30207","30208","30209","30210","30211","30212","30213","30214","30215","30216","30217","30218","30219","30220","30221","30222","30223","30224","30225","30226","30227","30301","30302","30303","30304","30305","30306","30307","30308","30309","30310","30311","30312","30313","30314","30315","30316","30317","30318","30319","30320","30321","30322","30323","30324","30325","30326","30327","30401","30402","30403","30404","30405","30406","30407","30408","30409","30410","30411","30412","30413","30414","30415","30416","30417","30418","30419","30420","30421","30422","30423","30424","30425","30426","30427","30501","30502","30503","30504","30505","30506","30507","30508","30509","30510","30511","30512","30513","30514","30515","30516","30517","30518","30519","30520","30521","30522","30523","30524","30525","30526","30527","30601","30602","30603","30604","30605","30606","30607","30608","30609","30610","30611","30612","30613","30614","30615","30616","30617","30618","30619","30620","30621","30622","30623","30624","30625","30626","30627","30701","30702","30703","30704","30705","30706","30707","30708","30709","30710","30711","30712","30713","30714","30715","30716","30717","30718","30719","30720","30721","30722","30723","30724","30725","30726","30727"];
 function isAdmin(){ return !!(ME&&ME.role==="teacher"&&normName(ME.name)==="변준한"); }
-const ROSTER=["0000bc4ac174c85a","00547ca3cdce1ffc","07913c5d2a2a627b","0ac27489907fdbd8","0b72562ef3000e1f","108d6766912ce78e","11154dcc0c4ec0ac","12570ec50476ed0c","1359676d10aefe7c","13ea011dc292f122","14e82a7b7b58cc34","17bccc6b2793f8ea","1886a71839e397dd","1900d1eee15ca734","19516f66eacf8962","19c874accaca001e","1ae247b9c1758d50","1c1a66d85f13bb52","1c9c18587ada6608","1dc43b78e48fc3a8","1def8a31fd51c4ce","1ea836fb6087243e","1f1664721f47f513","1f6647ef15f44a48","1f9e2a56e5d37372","201ac3a13c45847a","20d6b22eb325641f","24153980d4786491","2546b26da2d1a7a8","28e704289d7b0632","2b3cbc1ed570c473","2c7df2b5974b297c","2c86dd52206eeaef","2da8fadea0b5d880","303b40c8b473d78d","30815c3446025c50","313d44ce801ccc45","32785e97b17ae916","33b6f62810ea76ab","348d053638370076","352867257ba6241f","385213a6e820a771","388a4a7d20c18e57","38f634289055c2ff","3937429e5fec149e","3d57a341602ec8e6","3dd364b3ffecee6a","3e20b0d8ef2b056d","3e4a49505506a9cc","3eed6a74ec66f24b","3fd654abddab17b0","3ffb73496a70ca49","4029f900aa20f5d8","418cde0836e66c24","41ac934729412299","437faa4b26f4753f","44e7c9d273300541","44f442ba2b3597e2","45b80606021e36aa","47dad273c35eb78a","480b69e21bc75faf","49f98d58ef472d1d","4b5f0f8399b86fed","4c7303b8c3251cd7","4d9d6583eeb0df52","4de453eea04c7f0a","500e254a4c9848a0","52274a1a3fd37899","5285b098291c58ad","53104b27b0b32b72","535b0143b3ba6680","53c24c2b6478e9c2","54093645c56c60cc","548816470f972195","553dbe21e6c03236","5675659888ac499c","5df0aae795ca3bf8","5fb4cf0f156092a6","6195effef923c204","663f39671e49d032","66a2fb9ca9aacdbb","683e8867dbfc600c","6922643c0e9a287e","6a338179806da43b","6e517bcb2fae54c9","716d7694a30c4576","71b532e1be456558","74cb38e8d4efb6fe","75ba96c902d447d1","76fb5ae070113a82","78f2cdf9063b00f6","7907b045062c49c7","7c376bda953c5980","7c8653ec8ecdc0a7","7e77623c9ed7502d","7f32cb0930413524","80987386fd959bef","8382cc554a58e673","83eaecb1ffa37221","84be909d8cba0f3b","850f0b950a65265b","881fab56d04743c0","8b5c0619879f103b","8c3ce23d026168f6","8e03893ede62a5c7","8f918b673f7f4860","9028f5f04f2a1caf","906489c5c710b390","91522d7933acc75f","9212cc6e426b06ce","92b77f5d5c632417","9398d7f5239a8db2","944fb6cbf56fcf01","9467573067e3436d","9468457d4e725e6e","977695d11b3490d8","9b23887b6b6f09d5","9e93cfe108c286ea","a11402b1afc3bca4","a13b744be7841520","a1cd62a06a70af25","a23edd0b803b5c02","a3797ef12a627f88","a40cd41a0b9264e0","a4f0d042aefa27ab","a625ad31247abf70","a6cd4d7d13688318","a9c21d62eef0a74a","ad8d8e6373b84347","addbbc410f2eedd2","afaa5dfcffde357b","aff26cd9b8dcb95d","b13847f55fe10c68","b198af6dd2de7f19","b244c778a024afe2","b3a2d49f02089f83","b4544c4b08be6ba0","b80e9b49be17bc8c","b8354d0cf0f80d84","ba2f544d65b5de71","ba80f32b12c36b4b","bd71a62c6f0bbf84","bd7cc80d4ab9ce4a","bdbd75aef6a33560","bde6bf5e87ae0bd4","bf0a59493c036832","bff824ae1c328199","c20f72c2a2111e39","c26edd03980cd37b","c30f8fce04bc21af","c384480e0063ad63","c387989807566e3a","c8fb40bab2dede9f","c980e890d61ce6d6","cad1ceb750c51f30","ccbd4ee0b760f3f8","ccfb4d45e8bcaf5a","cdf16237dc509b15","cedda382870399eb","d0b903477849dbfd","d0fe1af0df57ba15","d2c2b30097348b24","d46056da891eb897","d53494a70e70dff4","d652eecfdc7d3643","da69084a3e33e6fb","ddc9d22385b99685","e402a261fd733d5f","e50312c7db5b1eb7","e53ccd9ffe04f033","e54760a1c9e719d4","e5f3c6ae6b87c9fb","e63d4ab6be421750","e6b93cc64b91ee51","ebcfb45b73372c82","ebdf500ec94dfc02","ed5d2e0d29f420ea","f1d247d0820e8055","f46ba5ac4a94d7b5","f48128fdcccc2e93","f4a31a5efce91d69","f97f3d60b2d735c0","f99255e11b84f004","fb5190f731919b4a","fb53e50954f1e202","fb9f690b95c2de3f","fd5a2cbb9e5cb55b","febca54846090609","ff39a300a61b4515"];
+const ROSTER=["0000bc4ac174c85a","00547ca3cdce1ffc","07913c5d2a2a627b","0ac27489907fdbd8","0b72562ef3000e1f","108d6766912ce78e","11154dcc0c4ec0ac","12570ec50476ed0c","1359676d10aefe7c","13ea011dc292f122","14e82a7b7b58cc34","17bccc6b2793f8ea","1886a71839e397dd","1900d1eee15ca734","19516f66eacf8962","19c874accaca001e","1ae247b9c1758d50","1c1a66d85f13bb52","1c9c18587ada6608","1dc43b78e48fc3a8","1def8a31fd51c4ce","1ea836fb6087243e","1f1664721f47f513","1f6647ef15f44a48","1f9e2a56e5d37372","201ac3a13c45847a","20d6b22eb325641f","24153980d4786491","2546b26da2d1a7a8","28e704289d7b0632","2b3cbc1ed570c473","2c7df2b5974b297c","2c86dd52206eeaef","2da8fadea0b5d880","303b40c8b473d78d","30815c3446025c50","313d44ce801ccc45","32785e97b17ae916","33b6f62810ea76ab","348d053638370076","352867257ba6241f","385213a6e820a771","388a4a7d20c18e57","38f634289055c2ff","3937429e5fec149e","3d57a341602ec8e6","3dd364b3ffecee6a","3e20b0d8ef2b056d","3e4a49505506a9cc","3eed6a74ec66f24b","3fd654abddab17b0","3ffb73496a70ca49","4029f900aa20f5d8","418cde0836e66c24","41ac934729412299","437faa4b26f4753f","44e7c9d273300541","44f442ba2b3597e2","45b80606021e36aa","47dad273c35eb78a","480b69e21bc75faf","49f98d58ef472d1d","4b5f0f8399b86fed","4c7303b8c3251cd7","4d9d6583eeb0df52","4de453eea04c7f0a","4e91afba4bd0f976","500e254a4c9848a0","52274a1a3fd37899","5285b098291c58ad","53104b27b0b32b72","535b0143b3ba6680","53c24c2b6478e9c2","54093645c56c60cc","548816470f972195","553dbe21e6c03236","5675659888ac499c","5df0aae795ca3bf8","5fb4cf0f156092a6","6195effef923c204","663f39671e49d032","66a2fb9ca9aacdbb","683e8867dbfc600c","6922643c0e9a287e","6a338179806da43b","6e517bcb2fae54c9","716d7694a30c4576","71b532e1be456558","74cb38e8d4efb6fe","75ba96c902d447d1","76fb5ae070113a82","78f2cdf9063b00f6","7907b045062c49c7","7c376bda953c5980","7c8653ec8ecdc0a7","7e77623c9ed7502d","7f32cb0930413524","80987386fd959bef","8382cc554a58e673","83eaecb1ffa37221","84be909d8cba0f3b","850f0b950a65265b","881fab56d04743c0","8b5c0619879f103b","8c3ce23d026168f6","8e03893ede62a5c7","8f918b673f7f4860","9028f5f04f2a1caf","906489c5c710b390","91522d7933acc75f","9212cc6e426b06ce","92b77f5d5c632417","9398d7f5239a8db2","944fb6cbf56fcf01","9467573067e3436d","9468457d4e725e6e","977695d11b3490d8","9b23887b6b6f09d5","9e93cfe108c286ea","a11402b1afc3bca4","a13b744be7841520","a1cd62a06a70af25","a23edd0b803b5c02","a3797ef12a627f88","a40cd41a0b9264e0","a4f0d042aefa27ab","a625ad31247abf70","a6cd4d7d13688318","a9c21d62eef0a74a","ad8d8e6373b84347","addbbc410f2eedd2","afaa5dfcffde357b","aff26cd9b8dcb95d","b13847f55fe10c68","b198af6dd2de7f19","b244c778a024afe2","b3a2d49f02089f83","b4544c4b08be6ba0","b80e9b49be17bc8c","b8354d0cf0f80d84","ba2f544d65b5de71","ba80f32b12c36b4b","bd71a62c6f0bbf84","bd7cc80d4ab9ce4a","bdbd75aef6a33560","bde6bf5e87ae0bd4","bf0a59493c036832","bff824ae1c328199","c20f72c2a2111e39","c26edd03980cd37b","c30f8fce04bc21af","c384480e0063ad63","c387989807566e3a","c8fb40bab2dede9f","c980e890d61ce6d6","cad1ceb750c51f30","ccbd4ee0b760f3f8","ccfb4d45e8bcaf5a","cdf16237dc509b15","cedda382870399eb","d0b903477849dbfd","d0fe1af0df57ba15","d2c2b30097348b24","d46056da891eb897","d53494a70e70dff4","d652eecfdc7d3643","da69084a3e33e6fb","ddc9d22385b99685","e402a261fd733d5f","e50312c7db5b1eb7","e53ccd9ffe04f033","e54760a1c9e719d4","e5f3c6ae6b87c9fb","e63d4ab6be421750","e6b93cc64b91ee51","ebcfb45b73372c82","ebdf500ec94dfc02","ed5d2e0d29f420ea","f1d247d0820e8055","f46ba5ac4a94d7b5","f48128fdcccc2e93","f4a31a5efce91d69","f97f3d60b2d735c0","f99255e11b84f004","fb5190f731919b4a","fb53e50954f1e202","fb9f690b95c2de3f","fd5a2cbb9e5cb55b","febca54846090609","ff39a300a61b4515"];
 async function inRoster(sid,name){
   const h=await pbkHex(sid+"|"+normName(name),SALT_ROSTER,8);
   return ROSTER.indexOf(h)>=0;
@@ -2134,77 +2137,124 @@ async function regen(){
 
 
 /* ======================= 관리자 ======================= */
-let ADMSEL=[];
-async function adminPanel(){
+let ADMSEL=[], ADMCLASS=null;
+
+async function unlockNames(code){
+  const raw=normCode(code);
+  if(raw.length<6) throw new Error("열람 코드를 확인해 주세요.");
+  const k=await pbkKey(raw,TE.encode(NAMES_SALT));
+  const b=await open_(k,NAMES_ENC);
+  NAMES={};
+  JSON.parse(TD.decode(b)).forEach(function(x){ NAMES[x[0]]=x[1]; });
+  try{ sessionStorage.setItem(LSK+"names",JSON.stringify(NAMES)); }catch(e){}
+  return NAMES;
+}
+function namesReady(){
+  if(NAMES) return true;
+  try{
+    const r=sessionStorage.getItem(LSK+"names");
+    if(r){ NAMES=JSON.parse(r); return true; }
+  }catch(e){}
+  return false;
+}
+function nameOf(sid){ return (NAMES&&NAMES[sid])?NAMES[sid]:""; }
+
+/* ---------- 관리자 첫 화면 ---------- */
+function adminPanel(){
   if(!isAdmin()) return toast("관리자만 쓸 수 있습니다");
+  ADMCLASS=null;
+  $("pane-teacher").innerHTML='<div class="card">'+
+    '<button class="btn ghost sm" type="button" onclick="App.tList()">← 학생 목록</button>'+
+    '<h2 style="margin-top:12px">관리자</h2>'+
+    '<p class="lede">변준한 선생님만 볼 수 있는 화면입니다. 무엇을 하시겠어요?</p></div>'+
+    '<div class="item" onclick="App.admAccess()">'+
+      '<div class="t">학생 사용 허가</div>'+
+      '<div class="m">반을 고르고 학생별로 사용 여부를 체크합니다</div></div>'+
+    '<div class="item" onclick="App.admPwPage()">'+
+      '<div class="t">비밀번호 초기화</div>'+
+      '<div class="m">비밀번호를 2026으로 되돌리고 새 복구 코드를 줍니다</div></div>';
+  window.scrollTo(0,0);
+}
+
+/* ---------- 사용 허가 ---------- */
+async function admAccess(){
   const box=$("pane-teacher");
   box.innerHTML='<div class="card"><p class="lede"><i class="spin"></i> 여는 중…</p></div>';
   try{
-    await loadDir(); await loadAccess();
+    await loadAccess();
     ADMSEL=(ACCESS===null)?SIDS.slice():ACCESS.slice();
-    const teachers=DIR.slice().sort(function(a,b){return a.name.localeCompare(b.name,"ko")});
-    let html='<div class="card">'+
-      '<button class="btn ghost sm" type="button" onclick="App.tList()">← 학생 목록</button>'+
-      '<h2 style="margin-top:12px">관리자</h2>'+
-      '<p class="lede">변준한 선생님만 볼 수 있는 화면입니다.</p>'+
-      (ACCESS===null?'<div class="notice">아직 사용 허가를 설정한 적이 없어, 지금은 <b>모든 학생이 쓸 수 있는 상태</b>입니다. 아래에서 한 번 저장하면 그때부터 체크한 학생만 쓸 수 있습니다.</div>':"")+
-      "</div>";
-
-    /* 사용 허가 */
-    html+='<div class="card"><h2>학생 사용 허가</h2>'+
-      '<p class="lede">체크한 학번만 로그인할 수 있습니다. 고친 뒤 저장을 눌러 주세요.</p>'+
-      '<div class="btnrow" style="margin-top:0">'+
-        '<button class="btn ghost sm" type="button" onclick="App.admAll(true)">전체 허용</button>'+
-        '<button class="btn ghost sm" type="button" onclick="App.admAll(false)">전체 차단</button>'+
-      "</div>"+
-      '<div id="adm-classes" style="margin-top:14px"></div>'+
-      '<div class="btnrow"><button class="btn" type="button" onclick="App.admSave()">사용 허가 저장</button></div>'+
-      '<p class="hint" id="adm-count"></p></div>';
-
-    /* 비밀번호 초기화 */
-    html+='<div class="card"><h2>비밀번호 초기화</h2>'+
-      '<p class="lede">초기화하면 비밀번호가 <b>2026</b>으로 바뀌고 복구 코드가 새로 나옵니다. 본인에게 알려 주고 바로 바꾸도록 안내해 주세요.</p>'+
-      "<h3>학생</h3>"+
-      '<div class="row"><label class="f"><span>학번</span><input type="text" id="adm-sid" inputmode="numeric" placeholder="30412"></label>'+
-      '<label class="f"><span>이름</span><input type="text" id="adm-name" placeholder="홍길동"></label></div>'+
-      '<button class="btn ghost" type="button" onclick="App.admResetStudent()">이 학생 비밀번호 초기화</button>'+
-      "<h3 style=\"margin-top:20px\">교사</h3>"+
-      '<label class="f"><span>선생님</span><select id="adm-teacher">'+
-        teachers.map(function(t){return '<option value="'+esc(t.id)+'">'+esc(t.name)+"</option>"}).join("")+
-      "</select></label>"+
-      '<button class="btn ghost" type="button" onclick="App.admResetTeacher()">이 선생님 비밀번호 초기화</button>'+
-      '<p class="err" id="adm-err"></p></div>';
-
-    box.innerHTML=html;
-    drawClasses();
-    window.scrollTo(0,0);
-  }catch(err){ paneError("pane-teacher","관리자 화면을 열지 못했습니다: "+((err&&err.message)||err),"App.adminPanel()"); }
+    if(!namesReady()) return admAskCode();
+    admDrawAccess();
+  }catch(err){ paneError("pane-teacher","열지 못했습니다: "+((err&&err.message)||err),"App.admAccess()"); }
 }
-function drawClasses(){
-  const box=$("adm-classes"); if(!box) return;
+function admAskCode(){
+  $("pane-teacher").innerHTML='<div class="card">'+
+    '<button class="btn ghost sm" type="button" onclick="App.adminPanel()">← 관리자</button>'+
+    '<h2 style="margin-top:12px">관리자 열람 코드</h2>'+
+    '<p class="lede">학생 이름은 암호를 걸어 보관합니다. 코드를 넣으면 이 탭에서만 풀립니다.</p>'+
+    '<label class="f"><span>열람 코드</span><input type="password" id="adm-code" autocomplete="off" placeholder="관리자 열람 코드"></label>'+
+    '<p class="err" id="adm-code-err"></p>'+
+    '<button class="btn" type="button" onclick="App.admUnlock()">확인</button></div>';
+}
+async function admUnlock(){
+  const e=$("adm-code-err"); e.textContent="";
+  try{
+    await unlockNames($("adm-code").value);
+    admDrawAccess();
+  }catch(err){ e.textContent="코드가 맞지 않습니다."; }
+}
+function admDrawAccess(){
   const cls={};
   SIDS.forEach(function(sid){ (cls[sid.slice(0,3)]=cls[sid.slice(0,3)]||[]).push(sid); });
-  box.innerHTML=Object.keys(cls).sort().map(function(c){
-    const on=cls[c].filter(function(x){return ADMSEL.indexOf(x)>=0}).length;
-    return '<div style="margin-bottom:14px">'+
-      '<div style="display:flex;align-items:center;gap:9px;margin-bottom:6px">'+
-        '<b style="font-size:14px;color:var(--navy-700)">'+Number(c.slice(2))+"반</b>"+
-        '<span class="hint" style="margin:0">'+on+" / "+cls[c].length+"명</span>"+
-        '<button class="btn ghost sm" type="button" style="margin-left:auto;padding:4px 9px" onclick="App.admClass(\''+c+'\',true)">반 전체</button>'+
-        '<button class="btn ghost sm" type="button" style="padding:4px 9px" onclick="App.admClass(\''+c+'\',false)">해제</button>'+
-      "</div>"+
-      '<div class="chips">'+cls[c].map(function(sid){
-        return '<button class="chip" type="button" style="padding:5px 10px;font-size:13px" aria-pressed="'+
-          (ADMSEL.indexOf(sid)>=0)+'" onclick="App.admToggle(\''+sid+'\')">'+sid+"</button>";
-      }).join("")+"</div></div>";
-  }).join("");
+  const keys=Object.keys(cls).sort();
+  let html='<div class="card">'+
+    '<button class="btn ghost sm" type="button" onclick="App.adminPanel()">← 관리자</button>'+
+    '<h2 style="margin-top:12px">학생 사용 허가</h2>'+
+    '<p class="lede">체크한 학생만 로그인할 수 있습니다. 고친 뒤 저장을 눌러 주세요.</p>'+
+    (ACCESS===null?'<div class="notice">아직 한 번도 저장한 적이 없어 <b>모든 학생이 쓸 수 있는 상태</b>입니다. 저장하는 순간부터 체크한 학생만 쓸 수 있습니다.</div>':"")+
+    '<div class="btnrow" style="margin-top:0">'+
+      '<button class="btn ghost sm" type="button" onclick="App.admAll(true)">전체 허용</button>'+
+      '<button class="btn ghost sm" type="button" onclick="App.admAll(false)">전체 차단</button>'+
+      '<button class="btn sm" type="button" onclick="App.admSave()">저장</button></div>'+
+    '<p class="hint" id="adm-count"></p></div>';
+
+  html+='<div class="card"><h3 style="margin-top:0">반 고르기</h3><div class="chips">'+
+    keys.map(function(c){
+      const on=cls[c].filter(function(x){return ADMSEL.indexOf(x)>=0}).length;
+      return '<button class="chip" type="button" aria-pressed="'+(ADMCLASS===c)+'" onclick="App.admPickClass(\''+c+'\')">'+
+        Number(c.slice(2))+"반 <span style='opacity:.7'>"+on+"/"+cls[c].length+"</span></button>";
+    }).join("")+"</div></div>";
+
+  html+='<div id="adm-list"></div>';
+  $("pane-teacher").innerHTML=html;
+  admCount();
+  if(ADMCLASS) admDrawList();
+  window.scrollTo(0,0);
+}
+function admPickClass(c){ ADMCLASS=(ADMCLASS===c)?null:c; admDrawAccess(); }
+function admDrawList(){
+  const box=$("adm-list"); if(!box||!ADMCLASS) return;
+  const list=SIDS.filter(function(s){return s.slice(0,3)===ADMCLASS});
+  box.innerHTML='<div class="card">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
+      '<h3 style="margin:0">'+Number(ADMCLASS.slice(2))+"반</h3>"+
+      '<button class="btn ghost sm" type="button" style="margin-left:auto" onclick="App.admClass(\''+ADMCLASS+'\',true)">모두 체크</button>'+
+      '<button class="btn ghost sm" type="button" onclick="App.admClass(\''+ADMCLASS+'\',false)">모두 해제</button></div>'+
+    list.map(function(sid){
+      const on=ADMSEL.indexOf(sid)>=0;
+      return '<label class="jpick" style="padding:7px 2px;margin:0;border-bottom:1px solid var(--rule);color:var(--ink)">'+
+        '<input type="checkbox" '+(on?"checked":"")+' onchange="App.admToggle(\''+sid+'\')"> '+
+        "<span>"+sid+" "+esc(nameOf(sid))+"</span></label>";
+    }).join("")+"</div>";
+}
+function admCount(){
   const n=$("adm-count");
   if(n) n.textContent="지금 허용: "+ADMSEL.length+"명 / 전체 "+SIDS.length+"명";
 }
 function admToggle(sid){
   const i=ADMSEL.indexOf(sid);
   if(i<0) ADMSEL.push(sid); else ADMSEL.splice(i,1);
-  drawClasses();
+  admCount();
 }
 function admClass(c,on){
   SIDS.filter(function(s){return s.slice(0,3)===c}).forEach(function(sid){
@@ -2212,15 +2262,40 @@ function admClass(c,on){
     if(on&&i<0) ADMSEL.push(sid);
     if(!on&&i>=0) ADMSEL.splice(i,1);
   });
-  drawClasses();
+  admDrawAccess();
 }
-function admAll(on){ ADMSEL=on?SIDS.slice():[]; drawClasses(); }
+function admAll(on){ ADMSEL=on?SIDS.slice():[]; admDrawAccess(); }
 async function admSave(){
   try{
     await Store.put("dir","access",{allowed:ADMSEL.slice(),at:Date.now()});
     ACCESS=ADMSEL.slice();
     toast(ADMSEL.length+"명 사용 허가로 저장했습니다");
   }catch(e){ toast("저장하지 못했습니다: "+e.message); }
+}
+
+/* ---------- 비밀번호 초기화 ---------- */
+async function admPwPage(){
+  const box=$("pane-teacher");
+  box.innerHTML='<div class="card"><p class="lede"><i class="spin"></i> 여는 중…</p></div>';
+  try{
+    await loadDir();
+    const teachers=DIR.slice().sort(function(a,b){return a.name.localeCompare(b.name,"ko")});
+    box.innerHTML='<div class="card">'+
+      '<button class="btn ghost sm" type="button" onclick="App.adminPanel()">← 관리자</button>'+
+      '<h2 style="margin-top:12px">비밀번호 초기화</h2>'+
+      '<p class="lede">초기화하면 비밀번호가 <b>2026</b>으로 바뀌고 복구 코드가 새로 나옵니다. 본인에게 알려 주고 바로 바꾸도록 안내해 주세요.</p></div>'+
+      '<div class="card"><h3 style="margin-top:0">학생</h3>'+
+      '<div class="row"><label class="f"><span>학번</span><input type="text" id="adm-sid" inputmode="numeric" placeholder="30412"></label>'+
+      '<label class="f"><span>이름</span><input type="text" id="adm-name" placeholder="홍길동"></label></div>'+
+      '<button class="btn ghost" type="button" onclick="App.admResetStudent()">이 학생 초기화</button></div>'+
+      '<div class="card"><h3 style="margin-top:0">교사</h3>'+
+      '<label class="f"><span>선생님</span><select id="adm-teacher">'+
+        teachers.map(function(t){return '<option value="'+esc(t.id)+'">'+esc(t.name)+"</option>"}).join("")+
+      "</select></label>"+
+      '<button class="btn ghost" type="button" onclick="App.admResetTeacher()">이 선생님 초기화</button>'+
+      '<p class="err" id="adm-err"></p></div>';
+    window.scrollTo(0,0);
+  }catch(err){ paneError("pane-teacher","열지 못했습니다: "+((err&&err.message)||err),"App.admPwPage()"); }
 }
 
 async function adminReset(aid,label){
@@ -2278,7 +2353,7 @@ function showReset2026(who,rc,kept){
   m.innerHTML='<div style="background:#fff;color:#16222E;border-radius:12px;max-width:460px;width:100%;padding:20px;line-height:1.65">'+
     "<h3 style='margin:0 0 8px;font-size:18px'>초기화했습니다</h3>"+
     "<p style='font-size:14px;margin:0 0 4px'><b>"+esc(who)+"</b></p>"+
-    "<p style='font-size:13.5px;color:#5D6D7E;margin:0 0 10px'>새 비밀번호는 <b style='color:#16222E'>2026</b> 입니다. 본인에게 알려 주고 바로 바꾸도록 안내해 주세요.</p>"+
+    "<p style='font-size:13.5px;color:#5D6D7E;margin:0 0 10px'>새 비밀번호는 <b style='color:#16222E'>2026</b> 입니다.</p>"+
     '<div class="code">'+esc(rc)+"</div>"+
     "<p style='font-size:12.5px;color:#5D6D7E;margin:0 0 12px'>새 복구 코드입니다. 본인에게 함께 전해 주세요."+
       (kept?"":"<br><b style='color:#B23A2F'>예전 기록은 본인이 다시 열 수 없습니다.</b>")+"</p>"+
@@ -2529,7 +2604,8 @@ const App={
   saveAllJournals:saveAllJournals, printOne:printOne, printPicked:printPicked,
   tList:tList, tStudent:tStudent, tSession:tSession, saveJournal:saveJournal, regen:regen, toLedger:toLedger,
   renderSettings:renderSettings, changePw:changePw, reissue:reissue,
-  adminPanel:adminPanel, admToggle:admToggle, admClass:admClass, admAll:admAll,
+  adminPanel:adminPanel, admAccess:admAccess, admPwPage:admPwPage, admUnlock:admUnlock,
+  admPickClass:admPickClass, admToggle:admToggle, admClass:admClass, admAll:admAll,
   admSave:admSave, admResetStudent:admResetStudent, admResetTeacher:admResetTeacher,
   backupMine:backupMine, importPick:importPick, importFile:importFile
 };
